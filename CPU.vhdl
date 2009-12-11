@@ -175,6 +175,24 @@ architecture rtl of CPU is
                               rf_writeData, rf_read1Data, rf_read2Data);
         
                 rf_WE <= ctrl_RegWrite;
+
+            -- Control
+                control: entity work.Control(rtl)
+                    port map (ctrl_Operation, ctrl_Func,
+                              ctrl_Branch,ctrl_MemRead,ctrl_MemWrite,
+                              ctrl_RegWrite,ctrl_SignExtend,
+                              ctrl_ALUSrc,ctrl_MemToReg,ctrl_RegDst,
+                              ctrl_Jump,ctrl_ALUOp);
+                
+                ctrl_Operation <= inst_data(31 downto 26);
+                ctrl_Func <= inst_data(5 downto 0);
+    
+            
+            -- connect register file inputs
+            rf_reg1 <= rs;
+            rf_reg2 <= rt;
+
+            PC_adder_in <= PC;
         -- EX
             -- ALU
                 ALU: entity work.ALU(rtl)
@@ -197,6 +215,13 @@ architecture rtl of CPU is
                                  ALU_Value2(n));
                 end generate GEN_ALUSrc_mux;
         
+            -- ALU control
+                ALUcontrol: entity work.ALUControl(rtl)
+                    port map (ALUctrl_ALUOp,ALUctrl_Func,ALUctrl_Operation);
+                    
+                ALUctrl_ALUOp <= ctrl_ALUOp;
+                ALUctrl_Func <= func;
+
         -- MEM
             -- Data Memory
                 data_memory: entity work.sram64kx8(sram_behaviour)
@@ -236,32 +261,7 @@ architecture rtl of CPU is
                              ctrl_RegDst(1),
                              rf_WriteReg(n));
             end generate GEN_writeReg_mux;
-                      
-        
-        -- Control
-            control: entity work.Control(rtl)
-                port map (ctrl_Operation, ctrl_Func,
-                          ctrl_Branch,ctrl_MemRead,ctrl_MemWrite,
-                          ctrl_RegWrite,ctrl_SignExtend,
-                          ctrl_ALUSrc,ctrl_MemToReg,ctrl_RegDst,
-                          ctrl_Jump,ctrl_ALUOp);
-            
-            ctrl_Operation <= inst_data(31 downto 26);
-            ctrl_Func <= inst_data(5 downto 0);
-
-        -- ALU control
-            ALUcontrol: entity work.ALUControl(rtl)
-                port map (ALUctrl_ALUOp,ALUctrl_Func,ALUctrl_Operation);
-                
-            ALUctrl_ALUOp <= ctrl_ALUOp;
-            ALUctrl_Func <= func;
-        
-        PC_adder_in <= PC;
-        
-        -- connect register file inputs
-        rf_reg1 <= rs;
-        rf_reg2 <= rt;
-                        
+                                              
     clock: process begin
         loop
             clk <= '0'; 
