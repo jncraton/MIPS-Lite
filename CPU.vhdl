@@ -19,6 +19,7 @@ architecture rtl of CPU is
         signal isBranching: std_logic;
 
         -- ID
+        signal ID_writeReg : std_logic_vector(4 downto 0);
         signal ID_operation :  std_logic_vector(5 downto 0);
         signal ID_rs,ID_rt,ID_rd :  std_logic_vector(4 downto 0);
         signal ID_shift_amount :  std_logic_vector(31 downto 0);
@@ -157,13 +158,14 @@ architecture rtl of CPU is
             ID_PC <= PC;
             -- TODO: this should come from EX or MEM stage
             ID_writeData <= rf_writeData;
+            ID_writeReg <= rf_writeReg;
         
         -- ID
 
             
             -- InstructionFetch
                 InstructionDecode: entity work.InstructionDecode(rtl)
-                    port map (clk, ID_PC, ID_inst, ID_writeData,
+                    port map (clk, ID_PC, ID_inst, ID_writeReg, ID_writeData,
                               ID_Operation, ID_rs, ID_rt, ID_rd,
                               ID_shift_amount, ID_func, ID_jump_address,
                               ID_immediate, ID_immediate_signExtend,
@@ -173,36 +175,28 @@ architecture rtl of CPU is
                               ID_ALUSrc,ID_MemToReg,ID_RegDst,
                               ID_Jump,ID_ALUOp);
 
-            -- break up intruction 
-                operation <= ID_Operation;
-                rs <= ID_rs;
-                rt <= ID_rt;
-                rd <= ID_rd;
-                shift_amount <= ID_shift_amount;
-                func <= ID_func;
-                jump_address <= ID_jump_address;
-    
-                immediate <= ID_immediate;
-                immediate_signExtend <= ID_immediate_signExtend;
+                -- ID/EX Register
                 
-            -- connect halt
-                halt <= ID_halt;
-                
-            -- Register File
-                --rf_read1Data <= ID_Read1Data;
-                --rf_read2Data <= ID_Read2Data;
-                --rf_WriteData <= ID_writeData;
-                register_file: entity work.RegFile(rtl)
-                    port map (rf_reg1, rf_reg2, rf_writeReg, rf_WE, clk,                       
-                              rf_writeData, rf_read1Data, rf_read2Data);
+                    operation <= ID_Operation;
+                    rs <= ID_rs;
+                    rt <= ID_rt;
+                    rd <= ID_rd;
+                    shift_amount <= ID_shift_amount;
+                    func <= ID_func;
+                    jump_address <= ID_jump_address;
         
-                rf_WE <= ID_RegWrite;
+                    immediate <= ID_immediate;
+                    immediate_signExtend <= ID_immediate_signExtend;
+                
+                    halt <= ID_halt;
+                
+                    rf_read1Data <= ID_Read1Data;
+                    rf_read2Data <= ID_Read2Data;
 
-            -- connect register file inputs
-            rf_reg1 <= rs;
-            rf_reg2 <= rt;
+                    rf_reg1 <= rs;
+                    rf_reg2 <= rt;
 
-            PC_adder_in <= PC;
+                    PC_adder_in <= PC;
         -- EX
             -- ALU
                 ALU: entity work.ALU(rtl)
@@ -319,7 +313,7 @@ architecture rtl of CPU is
             assert data_data = x"f0f0f0f0"
                 report "2 Bad data_data" & str(data_data);
             assert rf_writeData = x"f0f0f0f0"
-                report "Bad rf_writeData" & str(rf_writeData);
+                report "2 Bad rf_writeData" & str(rf_writeData);
             
             wait until clk = '1';
             wait until clk = '0';
@@ -332,7 +326,13 @@ architecture rtl of CPU is
             assert rf_writeReg = b"01001"
                 report "bad write reg:" & str(rf_writeReg);
             assert rf_writeData = x"f0f0f0f0"
-                report "bad rf_writeData:" & str(rf_writeData);
+                report "3 bad rf_writeData:" & str(rf_writeData);
+            assert ALU_Value1 = x"00000000"
+                report "3 bad ALU_Value1:" & str(ALU_Value1);
+            assert ALU_Value2 = x"f0f0f0f0"
+                report "3 bad ALU_Value2:" & str(ALU_Value2);
+            assert ALU_ValueOut = x"f0f0f0f0"
+                report "3 bad ALU_ValueOut:" & str(ALU_ValueOut);
             wait until (clk = '0');
             wait until (clk = '1');
     
