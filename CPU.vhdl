@@ -150,8 +150,16 @@ architecture rtl of CPU is
 
         -- ID
             -- InstructionFetch
-                --InstructionDecode: entity work.InstructionDecode(rtl)
-                 --   port map (clk, PC_in, inst, PC, PC_4, PC_8);
+                InstructionDecode: entity work.InstructionDecode(rtl)
+                    port map (clk, ID_PC, ID_inst, ID_writeData,
+                              ID_Operation, ID_rs, ID_rt, ID_rd,
+                              ID_shift_amount, ID_func, ID_jump_address,
+                              ID_immediate, ID_immediate_signExtend,
+                              ID_Read1Data, ID_Read2Data,
+                              ID_Branch,ID_MemRead,ID_MemWrite,
+                              ID_RegWrite,ID_SignExtend,ID_Halt,
+                              ID_ALUSrc,ID_MemToReg,ID_RegDst,
+                              ID_Jump,ID_ALUOp);
 
             -- break up intruction instruction
                 operation <= inst(31 downto 26);
