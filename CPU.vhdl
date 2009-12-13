@@ -16,8 +16,9 @@ architecture rtl of CPU is
         signal reset: std_logic;
         signal halt: std_logic;
         
-        signal isBranching: std_logic;
-
+        -- IF
+        signal IF_PC,IF_PC_4,IF_PC_8: std_logic_vector(31 downto 0);
+        
         -- ID
         signal ID_writeReg : std_logic_vector(4 downto 0);
         signal ID_operation :  std_logic_vector(5 downto 0);
@@ -27,12 +28,19 @@ architecture rtl of CPU is
         signal ID_jump_address :  std_logic_vector(31 downto 0);
         signal ID_immediate,ID_immediate_signExtend :  std_logic_vector(31 downto 0);
         signal ID_Read1Data,ID_Read2Data :  std_logic_vector(31 downto 0);
-        signal ID_Branch,ID_MemRead,ID_MemWrite,ID_RegWrite,ID_SignExtend,ID_Halt: STD_LOGIC;
+        signal ID_Branch,ID_MemRead,ID_MemWrite,ID_RegWrite,ID_SignExtend,ID_Halt,ID_IsBranching: STD_LOGIC;
         signal ID_ALUSrc,ID_MemToReg,ID_RegDst,ID_Jump,ID_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
         
-        -- IF
-        signal IF_PC,IF_PC_4,IF_PC_8: std_logic_vector(31 downto 0);
-        
+        -- EX
+
+        signal EX_operation :  std_logic_vector(5 downto 0);
+        signal EX_func :  std_logic_vector(5 downto 0);
+        signal EX_immediate :  std_logic_vector(31 downto 0);
+        signal EX_shift_amount :  std_logic_vector(31 downto 0);
+        signal EX_Read1Data,EX_Read2Data :  std_logic_vector(31 downto 0);
+        signal EX_ALU_ValueOut :  std_logic_vector(31 downto 0);
+        signal EX_ALUSrc,EX_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
+
         
         -- PC
         signal PC_in: std_logic_vector(31 downto 0);
@@ -125,11 +133,11 @@ architecture rtl of CPU is
                 PC_branch_dst_adder: entity work.mux2to1_indiv(rtl)
                     port map(IF_PC_4(n), 
                              PC_branchDst_adder_out(n),
-                             isBranching,
+                             ID_isBranching,
                              PC_branchDst_out(n));
             end generate GEN_branchDst_mux;                         
             
-            isBranching <= ALU_Zero and ID_Branch;
+            --isBranching <= ALU_Zero and ID_Branch;
                              
             -- PC in mux - selects the input to the PC
                 -- options are PC+4 normally, imm_pc_final on branch, or 0x00000000 for reset
@@ -151,6 +159,7 @@ architecture rtl of CPU is
                 ID_writeReg <= rf_writeReg;
                 -- TODO: these need to go away
                 PC <= IF_PC;
+                --isBranching <= '0';--ID_isBranching;
         
         -- ID
 
@@ -163,11 +172,25 @@ architecture rtl of CPU is
                               ID_immediate, ID_immediate_signExtend,
                               ID_Read1Data, ID_Read2Data,
                               ID_Branch,ID_MemRead,ID_MemWrite,
-                              ID_RegWrite,ID_SignExtend,ID_Halt,
+                              ID_RegWrite,ID_SignExtend,ID_Halt,ID_IsBranching,
                               ID_ALUSrc,ID_MemToReg,ID_RegDst,
                               ID_Jump,ID_ALUOp);
 
             -- ID/EX Register
+                EX_Operation <= ID_Operation;
+
+                EX_shift_amount <= ID_shift_amount;
+                EX_Func <= ID_func;
+    
+                EX_immediate <= ID_immediate;
+            
+                EX_read1Data <= ID_Read1Data;
+                EX_read2Data <= ID_Read2Data;
+
+                EX_ALUSrc <= ID_ALUSrc;
+                EX_ALUOp <= ID_ALUOp;
+            
+            -- Map to globals TODO: this goes away
             
                 operation <= ID_Operation;
                 rs <= ID_rs;
@@ -189,33 +212,43 @@ architecture rtl of CPU is
                 rf_reg2 <= rt;
 
         -- EX
-            -- ALU
-                ALU: entity work.ALU(rtl)
-                    port map (ALU_Value1, ALU_Value2, ALU_Operation, ALU_ValueOut, 
-                              ALU_Overflow,ALU_Negative,ALU_Zero,ALU_CarryOut);
-                ALU_Operation <= ALUCtrl_Operation;
-
-            -- ALU input 1 comes from the register file output 1
-                ALU_Value1 <= rf_read1Data;
-            
-            -- ALUSrc mux - selects the ALU source (2nd one)
-                GEN_ALUSrc_mux: for n in 0 to 31 generate
-                    ALUSrc_mux: entity work.mux4to1_indiv(rtl)
-                        port map(rf_read2Data(n),
-                                 immediate(n),
-                                 shift_amount(n),
-                                 'X',
-                                 ID_ALUSrc(0),
-                                 ID_ALUSrc(1),
-                                 ALU_Value2(n));
-                end generate GEN_ALUSrc_mux;
-        
-            -- ALU control
-                ALUcontrol: entity work.ALUControl(rtl)
-                    port map (ALUCtrl_ALUOp,ALUCtrl_Func,ALUCtrl_Operation);
+                Execute: entity work.Execute(rtl)
+                    port map (clk,EX_Operation, EX_Func, 
+                              EX_Read1Data, EX_Read2Data,
+                              EX_immediate, EX_shift_amount,
+                              EX_ALUSrc, EX_ALUOp,
+                              EX_ALU_ValueOut);
                     
-                ALUCtrl_ALUOp <= ID_ALUOp;
-                ALUCtrl_Func <= func;
+            -- ALU
+--                ALU: entity work.ALU(rtl)
+--                    port map (ALU_Value1, ALU_Value2, ALU_Operation, ALU_ValueOut, 
+--                              ALU_Overflow,ALU_Negative,ALU_Zero,ALU_CarryOut);
+--                ALU_Operation <= ALUCtrl_Operation;
+--
+--            -- ALU input 1 comes from the register file output 1
+--                ALU_Value1 <= rf_read1Data;
+--            
+--            -- ALUSrc mux - selects the ALU source (2nd one)
+--                GEN_ALUSrc_mux: for n in 0 to 31 generate
+--                    ALUSrc_mux: entity work.mux4to1_indiv(rtl)
+--                        port map(rf_read2Data(n),
+--                                 immediate(n),
+--                                 shift_amount(n),
+--                                 'X',
+--                                 ID_ALUSrc(0),
+--                                 ID_ALUSrc(1),
+--                                 ALU_Value2(n));
+--                end generate GEN_ALUSrc_mux;
+--        
+--            -- ALU control
+--                ALUcontrol: entity work.ALUControl(rtl)
+--                    port map (ALUCtrl_ALUOp,ALUCtrl_Func,ALUCtrl_Operation);
+--                    
+--                ALUCtrl_ALUOp <= ID_ALUOp;
+--                ALUCtrl_Func <= func;
+
+              -- EX\MEM Register
+              ALU_ValueOut <= EX_ALU_ValueOut;
 
         -- MEM
             -- Data Memory
@@ -250,7 +283,7 @@ architecture rtl of CPU is
                 writeReg_mux: entity work.mux4to1_indiv(rtl)
                     port map(rt(n),
                              rd(n),
-                             '1', -- TODO: is this correct (store in reg31)
+                             '1', -- R31 for JAL
                              'X',
                              ID_RegDst(0),
                              ID_RegDst(1),
@@ -284,7 +317,7 @@ architecture rtl of CPU is
 
         reset <= '1';
         
-        -- change false to true to verify first 25 IF_instructions of test
+        -- change false to true to verify first 25 instructions of test
         if (true) then
 
             wait until (clk = '0' and reset = '1');
@@ -303,8 +336,14 @@ architecture rtl of CPU is
                 report "Instruction not lw:" & str(IF_inst);
             assert data_data = x"f0f0f0f0"
                 report "2 Bad data_data" & str(data_data);
+            assert data_addr = x"00008000"
+                report "2 Bad data_addr" & str(data_addr);
             assert rf_writeData = x"f0f0f0f0"
                 report "2 Bad rf_writeData" & str(rf_writeData);
+            assert EX_Read1Data = x"00000000"
+                report "2 Bad EX_Read1Data" & str(EX_Read1Data);
+            assert ID_IsBranching = '0'
+                report "2 Bad ID_IsBranching" & str(ID_IsBranching);
             
             wait until clk = '1';
             wait until clk = '0';
@@ -318,10 +357,6 @@ architecture rtl of CPU is
                 report "bad write reg:" & str(rf_writeReg);
             assert rf_writeData = x"f0f0f0f0"
                 report "3 bad rf_writeData:" & str(rf_writeData);
-            assert ALU_Value1 = x"00000000"
-                report "3 bad ALU_Value1:" & str(ALU_Value1);
-            assert ALU_Value2 = x"f0f0f0f0"
-                report "3 bad ALU_Value2:" & str(ALU_Value2);
             assert ALU_ValueOut = x"f0f0f0f0"
                 report "3 bad ALU_ValueOut:" & str(ALU_ValueOut);
             wait until (clk = '0');
@@ -567,8 +602,6 @@ architecture rtl of CPU is
                 report "Bad IF_inst:" & str(IF_inst);
             assert PC_in = x"00000328"
                 report "Bad PC_in:" & str(PC_in);
-            assert ALU_Zero = '1'
-                report "Bad ALU_Zero:" & str(ALU_Zero);
             assert PC_branchDst_out = x"00000328"
                 report "Bad PC_branchDst_out:" & str(PC_branchDst_out);
             

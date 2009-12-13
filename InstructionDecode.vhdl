@@ -18,7 +18,7 @@ entity InstructionDecode is
           immediate : out std_logic_vector(31 downto 0);
           immediate_signExtend : out std_logic_vector(31 downto 0);
           Read1Data, Read2Data : out std_logic_vector(31 downto 0);
-          Branch,MemRead,MemWrite,RegWrite,SignExtend,Halt:OUT STD_LOGIC;
+          Branch,MemRead,MemWrite,RegWrite,SignExtend,Halt, IsBranching:OUT STD_LOGIC;
           ALUSrc,MemToReg,RegDst,Jump,ALUOp:OUT STD_LOGIC_VECTOR(1 DOWNTO 0));
 
     end InstructionDecode;
@@ -26,7 +26,9 @@ entity InstructionDecode is
     architecture rtl of InstructionDecode is
         signal rf_reg1, rf_reg2, rf_writeReg : std_logic_vector(4 downto 0);
         signal rf_WE : std_logic;
+        signal Branch_i, Equal : std_logic;
         signal rs_i, rt_i : std_logic_vector(4 downto 0);
+        signal read1Data_i, read2Data_i : std_logic_vector(31 downto 0);
         
     begin
             -- break up intruction instruction
@@ -57,15 +59,27 @@ entity InstructionDecode is
             -- Register File
                 register_file: entity work.RegFile(rtl)
                     port map (rs_i, rt_i, writeReg, rf_WE, clk,                       
-                              writeData, read1Data, read2Data);
+                              writeData, read1Data_i, read2Data_i);
                               
                 RegWrite <= rf_WE;
+                
+                read1Data <= read1Data_i;
+                read2Data <= read2Data_i;
         
             -- Control
                 control: entity work.Control(rtl)
                     port map (inst_data(31 downto 26), inst_data(5 downto 0),
-                              Branch,MemRead,MemWrite,
+                              Branch_i,MemRead,MemWrite,
                               rf_WE,SignExtend,
                               ALUSrc,MemToReg,RegDst,
                               Jump,ALUOp);
+                              
+            Branch <= Branch_i;
+                              
+            -- beq comparator
+                comparator: entity work.comparator(rtl)
+                    port map (read1Data_i, read2Data_i, equal);
+                    
+            IsBranching <= equal and Branch_i;
+            
     end rtl;
