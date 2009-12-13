@@ -67,16 +67,10 @@ architecture rtl of CPU is
         signal data_output: std_logic_vector(31 downto 0);
         signal data_input: std_logic_vector(31 downto 0);
         
-        -- Control
-        signal ID_Operation: STD_LOGIC_VECTOR(31 DOWNTO 26);
-        signal ID_Func: STD_LOGIC_VECTOR(5 DOWNTO 0);
-        signal ID_Branch,ID_MemRead,ID_MemWrite,ID_RegWrite,ID_SignExtend: STD_LOGIC;
-        signal ID_ALUSrc,ID_MemToReg,ID_RegDst,ID_Jump,ID_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
-    
         -- ALUControl
-        signal ALUID_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
-        signal ALUID_Func: STD_LOGIC_VECTOR(5 DOWNTO 0);
-        signal ALUID_Operation: STD_LOGIC_VECTOR(2 DOWNTO 0);
+        signal ALUCtrl_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
+        signal ALUCtrl_Func: STD_LOGIC_VECTOR(5 DOWNTO 0);
+        signal ALUCtrl_Operation: STD_LOGIC_VECTOR(2 DOWNTO 0);
     
         -- PC adder
         signal PC_adder_in: std_logic_vector(31 downto 0);
@@ -204,18 +198,6 @@ architecture rtl of CPU is
         
                 rf_WE <= ID_RegWrite;
 
-            -- Control
-                control: entity work.Control(rtl)
-                    port map (ID_Operation, ID_Func,
-                              ID_Branch,ID_MemRead,ID_MemWrite,
-                              ID_RegWrite,ID_SignExtend,
-                              ID_ALUSrc,ID_MemToReg,ID_RegDst,
-                              ID_Jump,ID_ALUOp);
-                
-                ID_Operation <= inst(31 downto 26);
-                ID_Func <= inst(5 downto 0);
-    
-            
             -- connect register file inputs
             rf_reg1 <= rs;
             rf_reg2 <= rt;
@@ -226,7 +208,7 @@ architecture rtl of CPU is
                 ALU: entity work.ALU(rtl)
                     port map (ALU_Value1, ALU_Value2, ALU_Operation, ALU_ValueOut, 
                               ALU_Overflow,ALU_Negative,ALU_Zero,ALU_CarryOut);
-                ALU_Operation <= ALUID_Operation;
+                ALU_Operation <= ALUCtrl_Operation;
 
             -- ALU input 1 comes from the register file output 1
                 ALU_Value1 <= rf_read1Data;
@@ -245,10 +227,10 @@ architecture rtl of CPU is
         
             -- ALU control
                 ALUcontrol: entity work.ALUControl(rtl)
-                    port map (ALUID_ALUOp,ALUID_Func,ALUID_Operation);
+                    port map (ALUCtrl_ALUOp,ALUCtrl_Func,ALUCtrl_Operation);
                     
-                ALUID_ALUOp <= ID_ALUOp;
-                ALUID_Func <= func;
+                ALUCtrl_ALUOp <= ID_ALUOp;
+                ALUCtrl_Func <= func;
 
         -- MEM
             -- Data Memory
