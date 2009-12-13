@@ -68,15 +68,15 @@ architecture rtl of CPU is
         signal data_input: std_logic_vector(31 downto 0);
         
         -- Control
-        signal ctrl_Operation: STD_LOGIC_VECTOR(31 DOWNTO 26);
-        signal ctrl_Func: STD_LOGIC_VECTOR(5 DOWNTO 0);
-        signal ctrl_Branch,ctrl_MemRead,ctrl_MemWrite,ctrl_RegWrite,ctrl_SignExtend: STD_LOGIC;
-        signal ctrl_ALUSrc,ctrl_MemToReg,ctrl_RegDst,ctrl_Jump,ctrl_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
+        signal ID_Operation: STD_LOGIC_VECTOR(31 DOWNTO 26);
+        signal ID_Func: STD_LOGIC_VECTOR(5 DOWNTO 0);
+        signal ID_Branch,ID_MemRead,ID_MemWrite,ID_RegWrite,ID_SignExtend: STD_LOGIC;
+        signal ID_ALUSrc,ID_MemToReg,ID_RegDst,ID_Jump,ID_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
     
         -- ALUControl
-        signal ALUctrl_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
-        signal ALUctrl_Func: STD_LOGIC_VECTOR(5 DOWNTO 0);
-        signal ALUctrl_Operation: STD_LOGIC_VECTOR(2 DOWNTO 0);
+        signal ALUID_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
+        signal ALUID_Func: STD_LOGIC_VECTOR(5 DOWNTO 0);
+        signal ALUID_Operation: STD_LOGIC_VECTOR(2 DOWNTO 0);
     
         -- PC adder
         signal PC_adder_in: std_logic_vector(31 downto 0);
@@ -144,7 +144,7 @@ architecture rtl of CPU is
                              PC_branchDst_out(n));
             end generate GEN_branchDst_mux;                         
             
-            isBranching <= ALU_Zero and ctrl_Branch;
+            isBranching <= ALU_Zero and ID_Branch;
                              
             -- PC in mux - selects the input to the PC
                 -- options are PC+4 normally, imm_pc_final on branch, or 0x00000000 for reset
@@ -153,8 +153,8 @@ architecture rtl of CPU is
                         -- zero unless reset is high
                         port map(PC_branchDst_out(n), jump_address(n),
                                  rf_read1Data(n), '0',
-                                 ctrl_Jump(0),
-                                 ctrl_Jump(1),
+                                 ID_Jump(0),
+                                 ID_Jump(1),
                                  PC_mux_out(n));
                 end generate GEN_PC_mux;
                 
@@ -202,18 +202,18 @@ architecture rtl of CPU is
                     port map (rf_reg1, rf_reg2, rf_writeReg, rf_WE, clk,                       
                               rf_writeData, rf_read1Data, rf_read2Data);
         
-                rf_WE <= ctrl_RegWrite;
+                rf_WE <= ID_RegWrite;
 
             -- Control
                 control: entity work.Control(rtl)
-                    port map (ctrl_Operation, ctrl_Func,
-                              ctrl_Branch,ctrl_MemRead,ctrl_MemWrite,
-                              ctrl_RegWrite,ctrl_SignExtend,
-                              ctrl_ALUSrc,ctrl_MemToReg,ctrl_RegDst,
-                              ctrl_Jump,ctrl_ALUOp);
+                    port map (ID_Operation, ID_Func,
+                              ID_Branch,ID_MemRead,ID_MemWrite,
+                              ID_RegWrite,ID_SignExtend,
+                              ID_ALUSrc,ID_MemToReg,ID_RegDst,
+                              ID_Jump,ID_ALUOp);
                 
-                ctrl_Operation <= inst(31 downto 26);
-                ctrl_Func <= inst(5 downto 0);
+                ID_Operation <= inst(31 downto 26);
+                ID_Func <= inst(5 downto 0);
     
             
             -- connect register file inputs
@@ -226,7 +226,7 @@ architecture rtl of CPU is
                 ALU: entity work.ALU(rtl)
                     port map (ALU_Value1, ALU_Value2, ALU_Operation, ALU_ValueOut, 
                               ALU_Overflow,ALU_Negative,ALU_Zero,ALU_CarryOut);
-                ALU_Operation <= ALUctrl_Operation;
+                ALU_Operation <= ALUID_Operation;
 
             -- ALU input 1 comes from the register file output 1
                 ALU_Value1 <= rf_read1Data;
@@ -238,31 +238,31 @@ architecture rtl of CPU is
                                  immediate(n),
                                  shift_amount(n),
                                  'X',
-                                 ctrl_ALUSrc(0),
-                                 ctrl_ALUSrc(1),
+                                 ID_ALUSrc(0),
+                                 ID_ALUSrc(1),
                                  ALU_Value2(n));
                 end generate GEN_ALUSrc_mux;
         
             -- ALU control
                 ALUcontrol: entity work.ALUControl(rtl)
-                    port map (ALUctrl_ALUOp,ALUctrl_Func,ALUctrl_Operation);
+                    port map (ALUID_ALUOp,ALUID_Func,ALUID_Operation);
                     
-                ALUctrl_ALUOp <= ctrl_ALUOp;
-                ALUctrl_Func <= func;
+                ALUID_ALUOp <= ID_ALUOp;
+                ALUID_Func <= func;
 
         -- MEM
             -- Data Memory
                 data_memory: entity work.sram64kx8(sram_behaviour)
                     port map (data_ncs, data_addr, data_data, data_nwe, data_noe);
         
-                data_nwe <= not ctrl_MemWrite;
-                data_noe <= not ctrl_MemRead;
-                data_ncs <= not (ctrl_MemWrite or ctrl_MemRead);
+                data_nwe <= not ID_MemWrite;
+                data_noe <= not ID_MemRead;
+                data_ncs <= not (ID_MemWrite or ID_MemRead);
                 data_addr <= ALU_ValueOut;
 
             -- connect data_data to reg out 2 with a tristate buffer
                 GEN_memdata_tris: for n in 31 downto 0 generate
-                    data_data(n) <= rf_read2Data(n) when ctrl_memwrite='1' else 'Z';
+                    data_data(n) <= rf_read2Data(n) when ID_memwrite='1' else 'Z';
                 end generate GEN_memdata_tris;
         
         -- WB
@@ -273,8 +273,8 @@ architecture rtl of CPU is
                                  data_data(n),
                                  PC_8(n), -- should be PC + 8 eventually
                                  '1',
-                                 ctrl_MemToReg(0),
-                                 ctrl_MemToReg(1),
+                                 ID_MemToReg(0),
+                                 ID_MemToReg(1),
                                  rf_writeData(n));
                 end generate GEN_rf_writeData_mux;
 
@@ -285,8 +285,8 @@ architecture rtl of CPU is
                              rd(n),
                              '1', -- TODO: is this correct (store in reg31)
                              'X',
-                             ctrl_RegDst(0),
-                             ctrl_RegDst(1),
+                             ID_RegDst(0),
+                             ID_RegDst(1),
                              rf_WriteReg(n));
             end generate GEN_writeReg_mux;
                                               
@@ -299,7 +299,7 @@ architecture rtl of CPU is
             clk <= '0';
             wait for 10 ns;
             exit when halt='0';
-            if( ctrl_MemWrite = '1') then
+            if( ID_MemWrite = '1') then
                 report "writing: " & str(data_data);
             end if;
         end loop;
@@ -439,8 +439,8 @@ architecture rtl of CPU is
                 report "Bad inst:" & str(inst);
             assert jump_address = x"00000100"
                 report "Bad jump_address" & str(jump_address);
-            assert ctrl_Jump = "01"
-                report "Bad ctrl_Jump" & str(ctrl_Jump);
+            assert ID_Jump = "01"
+                report "Bad ID_Jump" & str(ID_Jump);
                 
             wait until (clk = '0');
             wait until (clk = '1');
