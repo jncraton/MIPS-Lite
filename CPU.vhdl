@@ -17,6 +17,18 @@ architecture rtl of CPU is
         signal halt: std_logic;
         
         signal isBranching: std_logic;
+
+        -- ID
+        signal ID_operation :  std_logic_vector(5 downto 0);
+        signal ID_rs,ID_rt,ID_rd :  std_logic_vector(4 downto 0);
+        signal ID_shift_amount :  std_logic_vector(31 downto 0);
+        signal ID_func :  std_logic_vector(5 downto 0);
+        signal ID_jump_address :  std_logic_vector(31 downto 0);
+        signal ID_immediate :  std_logic_vector(31 downto 0);
+        signal ID_immediate_signExtend :  std_logic_vector(31 downto 0);
+        signal ID_Read1Data,ID_Read2Data :  std_logic_vector(31 downto 0);
+        signal ID_Branch,ID_MemRead,ID_MemWrite,ID_RegWrite,ID_SignExtend,ID_Halt: STD_LOGIC;
+        signal ID_ALUSrc,ID_MemToReg,ID_RegDst,ID_Jump,ID_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
         
         -- PC
         signal PC_in: std_logic_vector(31 downto 0);
@@ -147,8 +159,14 @@ architecture rtl of CPU is
                 end generate GEN_PC_mux;
                 
             -- IF/ID Register
-
+            ID_inst <= inst;
+            ID_PC <= PC;
+            -- TODO: this should come from EX or MEM stage
+            ID_writeData <= rf_writeData;
+        
         -- ID
+
+            
             -- InstructionFetch
                 InstructionDecode: entity work.InstructionDecode(rtl)
                     port map (clk, ID_PC, ID_inst, ID_writeData,
@@ -161,30 +179,25 @@ architecture rtl of CPU is
                               ID_ALUSrc,ID_MemToReg,ID_RegDst,
                               ID_Jump,ID_ALUOp);
 
-            -- break up intruction instruction
-                operation <= inst(31 downto 26);
-                rs <= inst(25 downto 21);
-                rt <= inst(20 downto 16);
-                rd <= inst(15 downto 11);
-                shift_amount(31 downto 5) <= "000000000000000000000000000";
-                shift_amount(4 downto 0) <= inst(10 downto 6);
-                func <= inst(5 downto 0);
-                jump_address(31 downto 28) <= PC(31 downto 28);
-                jump_address(27 downto 2) <= inst(25 downto 0);
-                jump_address(1 downto 0) <= "00";
+            -- break up intruction 
+                operation <= ID_Operation;
+                rs <= ID_rs;
+                rt <= ID_rt;
+                rd <= ID_rd;
+                shift_amount <= ID_shift_amount;
+                func <= ID_func;
+                jump_address <= ID_jump_address;
     
-                immediate(31 downto 16) <= x"0000";
-                immediate(15 downto 0) <= inst(15 downto 0);
-                GEN_signExtend: for n in 31 downto 16 generate
-                    immediate_signExtend(n) <= immediate(15);
-                end generate GEN_signExtend;
-                immediate_signExtend(15 downto 0) <= inst(15 downto 0);
+                immediate <= ID_immediate;
+                immediate_signExtend <= ID_immediate_signExtend;
                 
             -- connect halt
-                halt <= not (operation(0) and operation (1) and operation(2) and 
-                             operation(3) and operation (4) and operation(5));
-
+                halt <= ID_halt;
+                
             -- Register File
+                --rf_read1Data <= ID_Read1Data;
+                --rf_read2Data <= ID_Read2Data;
+                --rf_WriteData <= ID_writeData;
                 register_file: entity work.RegFile(rtl)
                     port map (rf_reg1, rf_reg2, rf_writeReg, rf_WE, clk,                       
                               rf_writeData, rf_read1Data, rf_read2Data);
