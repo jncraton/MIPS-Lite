@@ -22,11 +22,13 @@ architecture rtl of CPU is
         signal PC_in: std_logic_vector(31 downto 0);
         signal PC_WE: std_logic;
         signal PC: std_logic_vector(31 downto 0);
+        signal ID_PC: std_logic_vector(31 downto 0);
         signal not_PC: std_logic_vector(31 downto 0);
     
         -- instruction memory
         signal inst_addr: std_logic_vector(31 downto 0);
-        signal inst_data: std_logic_vector(31 downto 0);
+        signal inst: std_logic_vector(31 downto 0);
+        signal ID_inst: std_logic_vector(31 downto 0);
         signal inst_ncs: std_logic;
         signal inst_nwe: std_logic;
         signal inst_noe: std_logic;
@@ -35,6 +37,7 @@ architecture rtl of CPU is
         signal rf_reg1,rf_reg2,rf_writeReg: std_logic_vector(4 DOWNTO 0);
         signal rf_WE: std_logic;
         signal rf_writeData: std_logic_vector(31 DOWNTO 0);
+        signal ID_writeData: std_logic_vector(31 DOWNTO 0);
         signal rf_read1Data,rf_read2Data: std_logic_vector(31 DOWNTO 0);
         
         -- ALU
@@ -106,7 +109,7 @@ architecture rtl of CPU is
         -- IF
             -- InstructionFetch
                 InstructionFetch: entity work.InstructionFetch(rtl)
-                    port map (clk, PC_in, inst_data, PC, PC_4, PC_8);
+                    port map (clk, PC_in, inst, PC, PC_4, PC_8);
             
             GEN_PC_in: for n in 0 to 31 generate
                 PC_in(n) <= reset and PC_mux_out(n);
@@ -146,24 +149,28 @@ architecture rtl of CPU is
             -- IF/ID Register
 
         -- ID
+            -- InstructionFetch
+                --InstructionDecode: entity work.InstructionDecode(rtl)
+                 --   port map (clk, PC_in, inst, PC, PC_4, PC_8);
+
             -- break up intruction instruction
-                operation <= inst_data(31 downto 26);
-                rs <= inst_data(25 downto 21);
-                rt <= inst_data(20 downto 16);
-                rd <= inst_data(15 downto 11);
+                operation <= inst(31 downto 26);
+                rs <= inst(25 downto 21);
+                rt <= inst(20 downto 16);
+                rd <= inst(15 downto 11);
                 shift_amount(31 downto 5) <= "000000000000000000000000000";
-                shift_amount(4 downto 0) <= inst_data(10 downto 6);
-                func <= inst_data(5 downto 0);
+                shift_amount(4 downto 0) <= inst(10 downto 6);
+                func <= inst(5 downto 0);
                 jump_address(31 downto 28) <= PC(31 downto 28);
-                jump_address(27 downto 2) <= inst_data(25 downto 0);
+                jump_address(27 downto 2) <= inst(25 downto 0);
                 jump_address(1 downto 0) <= "00";
     
                 immediate(31 downto 16) <= x"0000";
-                immediate(15 downto 0) <= inst_data(15 downto 0);
+                immediate(15 downto 0) <= inst(15 downto 0);
                 GEN_signExtend: for n in 31 downto 16 generate
                     immediate_signExtend(n) <= immediate(15);
                 end generate GEN_signExtend;
-                immediate_signExtend(15 downto 0) <= inst_data(15 downto 0);
+                immediate_signExtend(15 downto 0) <= inst(15 downto 0);
                 
             -- connect halt
                 halt <= not (operation(0) and operation (1) and operation(2) and 
@@ -184,8 +191,8 @@ architecture rtl of CPU is
                               ctrl_ALUSrc,ctrl_MemToReg,ctrl_RegDst,
                               ctrl_Jump,ctrl_ALUOp);
                 
-                ctrl_Operation <= inst_data(31 downto 26);
-                ctrl_Func <= inst_data(5 downto 0);
+                ctrl_Operation <= inst(31 downto 26);
+                ctrl_Func <= inst(5 downto 0);
     
             
             -- connect register file inputs
@@ -295,8 +302,8 @@ architecture rtl of CPU is
             wait until (clk = '0' and reset = '1');
     
             -- 1: nop
-            assert inst_data = x"00000000"
-                report "Instruction not NOP:" & str(inst_data);
+            assert inst = x"00000000"
+                report "Instruction not NOP:" & str(inst);
                 
             wait until clk = '1';
             wait until clk = '0';
@@ -304,8 +311,8 @@ architecture rtl of CPU is
             -- 2: lw from memory
             assert PC = x"00000004"
                 report "Bad PC2 = " & str(PC);
-            assert inst_data = x"8c088000"
-                report "Instruction not lw:" & str(inst_data);
+            assert inst = x"8c088000"
+                report "Instruction not lw:" & str(inst);
             assert data_data = x"f0f0f0f0"
                 report "2 Bad data_data" & str(data_data);
             assert rf_writeData = x"f0f0f0f0"
@@ -317,8 +324,8 @@ architecture rtl of CPU is
             -- 3: add to $0 (0x00000000)
             assert PC = x"00000008"
                 report "Bad PC3 = " & str(PC);
-            assert inst_data = x"00084820"
-                report "Instruction not expected:" & str(inst_data);
+            assert inst = x"00084820"
+                report "Instruction not expected:" & str(inst);
             assert rf_writeReg = b"01001"
                 report "bad write reg:" & str(rf_writeReg);
             assert rf_writeData = x"f0f0f0f0"
@@ -330,8 +337,8 @@ architecture rtl of CPU is
             -- 4: sw back to memory
             assert PC = x"0000000c"
                 report "Bad PC4 = " & str(PC);
-            assert inst_data = x"ac098004"
-                report "Instruction not expected:" & str(inst_data);
+            assert inst = x"ac098004"
+                report "Instruction not expected:" & str(inst);
             assert data_data = x"f0f0f0f0"
                 report "bad data_data:" & str(data_data);
             wait until (clk = '0');
@@ -342,8 +349,8 @@ architecture rtl of CPU is
             -- 5: lw out again to verify
             assert PC = x"00000010"
                 report "Bad PC5 = " & str(PC);
-            assert inst_data = x"8c0a8004"
-                report "Instruction not lw:" & str(inst_data);
+            assert inst = x"8c0a8004"
+                report "Instruction not lw:" & str(inst);
             assert data_data = x"f0f0f0f0"
                 report "5 Bad data_data" & str(data_data);
             assert rf_writeData = x"f0f0f0f0"
@@ -355,8 +362,8 @@ architecture rtl of CPU is
             -- 6: lw again
             assert PC = x"00000014"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"8c0b8008"
-                report "Instruction not lw:" & str(inst_data);
+            assert inst = x"8c0b8008"
+                report "Instruction not lw:" & str(inst);
             assert data_data = x"ffffffff"
                 report "6 Bad data_data" & str(data_data);
             assert rf_writeData = x"ffffffff"
@@ -369,8 +376,8 @@ architecture rtl of CPU is
             -- 7: sub these two values
             assert PC = x"00000018"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"014b6022"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"014b6022"
+                report "Bad inst:" & str(inst);
             assert rf_writeData = x"f0f0f0f1"
                 report "Bad rf_writeData" & str(rf_writeData);
     
@@ -383,8 +390,8 @@ architecture rtl of CPU is
             -- rs and rt need to be switched
             assert PC = x"0000001c"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"01806840"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"01806840"
+                report "Bad inst:" & str(inst);
             assert rf_writeData = x"e1e1e1e2"
                 report "Bad rf_writeData" & str(rf_writeData);
                 
@@ -395,8 +402,8 @@ architecture rtl of CPU is
             -- 8: srl the result by 1
             assert PC = x"00000020"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"01a07042"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"01a07042"
+                report "Bad inst:" & str(inst);
             assert rf_writeData = x"70f0f0f1"
                 report "Bad rf_writeData" & str(rf_writeData);
                 
@@ -407,8 +414,8 @@ architecture rtl of CPU is
              -- 9: j out of here
             assert PC = x"00000024"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"08000040"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"08000040"
+                report "Bad inst:" & str(inst);
             assert jump_address = x"00000100"
                 report "Bad jump_address" & str(jump_address);
             assert ctrl_Jump = "01"
@@ -421,8 +428,8 @@ architecture rtl of CPU is
              -- 10: nop to make sure we are in the right place
             assert PC = x"00000100"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"00000000"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"00000000"
+                report "Bad inst:" & str(inst);
                 
             wait until (clk = '0');
             wait until (clk = '1');
@@ -431,8 +438,8 @@ architecture rtl of CPU is
              -- 11: ori to put a value in an address register
             assert PC = x"00000104"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"340f0200"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"340f0200"
+                report "Bad inst:" & str(inst);
             assert rf_writeData = x"00000200"
                 report "Bad rf_writeData" & str(rf_writeData);
                 
@@ -442,8 +449,8 @@ architecture rtl of CPU is
              -- 12: jr to that value (0x00000200)
             assert PC = x"00000108"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"01e00008"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"01e00008"
+                report "Bad inst:" & str(inst);
                 
             wait until (clk = '0');
             wait until (clk = '1');
@@ -452,8 +459,8 @@ architecture rtl of CPU is
             -- 13: nop to make sure we are in the right place
             assert PC = x"00000200"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"00000000"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"00000000"
+                report "Bad inst:" & str(inst);
                 
             wait until (clk = '0');
             wait until (clk = '1');
@@ -462,8 +469,8 @@ architecture rtl of CPU is
             -- 14: slt comparing r0 and r15 into r16
             assert PC = x"00000204"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"000f802a"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"000f802a"
+                report "Bad inst:" & str(inst);
             assert rf_writeData = x"00000001"
                report "Bad rf_writeData:" & str(rf_writeData);
     
@@ -474,8 +481,8 @@ architecture rtl of CPU is
             -- 15: nor this with r0 to flip all the bits
             assert PC = x"00000208"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"00108827"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"00108827"
+                report "Bad inst:" & str(inst);
             assert rf_writeData = x"fffffffe"
                report "Bad rf_writeData:" & str(rf_writeData);
     
@@ -486,8 +493,8 @@ architecture rtl of CPU is
             -- 16: jal out of here to 0x0300
             assert PC = x"0000020c"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"0c0000c0"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"0c0000c0"
+                report "Bad inst:" & str(inst);
             assert rf_writeData = x"00000214"
                report "Bad rf_writeData:" & str(rf_writeData);
                
@@ -498,8 +505,8 @@ architecture rtl of CPU is
             -- 17: nop to make sure we are in the right place
             assert PC = x"00000300"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"00000000"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"00000000"
+                report "Bad inst:" & str(inst);
                 
             wait until (clk = '0');
             wait until (clk = '1');
@@ -508,8 +515,8 @@ architecture rtl of CPU is
             -- 18: call a function (jal)
             assert PC = x"00000304"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"0c000100"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"0c000100"
+                report "Bad inst:" & str(inst);
             assert rf_writeData = x"0000030c"
                report "Bad rf_writeData:" & str(rf_writeData);
                 
@@ -520,8 +527,8 @@ architecture rtl of CPU is
             -- 19: ret from function (jr)
             assert PC = x"00000400"
                 report "Bad PC 1= " & str(PC);
-            assert inst_data = x"03e00008"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"03e00008"
+                report "Bad inst:" & str(inst);
             
             wait until (clk = '0');
             wait until (clk = '1');
@@ -530,8 +537,8 @@ architecture rtl of CPU is
             -- 20: nop just to check where we are
             assert PC = x"0000030c"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"00000000"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"00000000"
+                report "Bad inst:" & str(inst);
     
             wait until (clk = '0');
             wait until (clk = '1');
@@ -540,8 +547,8 @@ architecture rtl of CPU is
             -- 21: beq that will fail
             assert PC = x"00000310"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"10110010"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"10110010"
+                report "Bad inst:" & str(inst);
             assert PC_branchDst_out = x"00000314"
                 report "Bad PC_branchDst_out:" & str(PC_branchDst_out);
     
@@ -552,8 +559,8 @@ architecture rtl of CPU is
             -- 22: nop to make sure we didn't branch
             assert PC = x"00000314"
                 report "Bad PC (should not have branched) = " & str(PC);
-            assert inst_data = x"00000000"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"00000000"
+                report "Bad inst:" & str(inst);
     
             wait until (clk = '0');
             wait until (clk = '1');
@@ -562,8 +569,8 @@ architecture rtl of CPU is
             -- 23: beq that will succeed
             assert PC = x"00000318"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"10000010"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"10000010"
+                report "Bad inst:" & str(inst);
             assert PC_in = x"00000328"
                 report "Bad PC_in:" & str(PC_in);
             assert ALU_Zero = '1'
@@ -578,8 +585,8 @@ architecture rtl of CPU is
             -- 24: nop to see that we took the branch
             assert PC = x"00000328"
                 report "Bad PC = " & str(PC);
-            assert inst_data = x"00000000"
-                report "Bad inst:" & str(inst_data);
+            assert inst = x"00000000"
+                report "Bad inst:" & str(inst);
     
             wait until (clk = '0');
             wait until (clk = '1');
