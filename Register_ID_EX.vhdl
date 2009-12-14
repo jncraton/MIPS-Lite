@@ -42,7 +42,10 @@ entity Register_ID_EX is
           MemRead     :  in std_logic;
 
           MemToReg_out : out std_logic_vector(1 downto 0);
-          MemToReg     :  in std_logic_vector(1 downto 0));
+          MemToReg     :  in std_logic_vector(1 downto 0);
+
+          NextPC_out : out std_logic_vector(31 downto 0);
+          NextPC     :  in std_logic_vector(31 downto 0));
     end Register_ID_EX;
     
     architecture rtl of Register_ID_EX is
@@ -72,5 +75,8 @@ entity Register_ID_EX is
         MemRead_reg: entity work.register1(rtl)
             port map (MemRead, '1', clk, MemRead_out, open);        
         MemToReg_reg: entity work.register2(rtl)
-            port map (MemToReg, '1', clk, MemToReg_out, open);        
+            port map (MemToReg, '1', clk, MemToReg_out, open);
+        NextPC_reg: entity work.register32(rtl)
+            port map (NextPC, '1', clk, NextPC_out, open);        
+        
     end rtl;

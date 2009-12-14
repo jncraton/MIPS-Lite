@@ -17,7 +17,7 @@ architecture rtl of CPU is
         
         -- IF
         signal IF_PC,IF_PC_4,IF_PC_8: std_logic_vector(31 downto 0);
-        signal IF_PC_in: std_logic_vector(31 downto 0);
+        signal IF_NextPC: std_logic_vector(31 downto 0);
         signal IF_inst_addr: std_logic_vector(31 downto 0);
         signal IF_inst: std_logic_vector(31 downto 0);
         signal IF_inst_ncs: std_logic;
@@ -73,7 +73,7 @@ architecture rtl of CPU is
     begin
         -- IF
             InstructionFetch: entity work.InstructionFetch(rtl)
-                port map (clk, ID_NextPC, IF_inst, IF_PC, IF_PC_4, IF_PC_8);
+                port map (clk, reset, ID_NextPC, IF_inst, IF_PC, IF_PC_4, IF_PC_8);
                
             Register_IF_ID: entity work.Register_IF_ID(rtl)
                 port map (clk,
@@ -84,7 +84,7 @@ architecture rtl of CPU is
         
         -- ID
             InstructionDecode: entity work.InstructionDecode(rtl)
-                port map (clk, reset, ID_PC, ID_PC_4, ID_inst, WB_WriteReg, WB_writeData,
+                port map (clk, reset, ID_PC, IF_PC_4, ID_PC_8, ID_inst, WB_WriteReg, WB_writeData,
                         ID_Operation, ID_rs, ID_rt, ID_rd,
                         ID_shift_amount, ID_func, ID_jump_address,
                         ID_immediate, ID_immediate_signExtend,
@@ -111,7 +111,8 @@ architecture rtl of CPU is
                         EX_ALUOp , ID_ALUOp,
                         EX_MemWrite , ID_MemWrite,
                         EX_MemRead , ID_MemRead,
-                        EX_MemToReg , ID_MemToReg);
+                        EX_MemToReg , ID_MemToReg,
+                        IF_NextPC, ID_NextPC);
 
         -- EX
             Execute: entity work.Execute(rtl)
@@ -161,14 +162,18 @@ architecture rtl of CPU is
     clock: process begin
         loop
             clk <= '0'; 
-            wait for 100 ns;
+            wait for 10 ns;
             clk <= '1';
-            wait for 100 ns;
+            wait for 10 ns;
             clk <= '0';
-            wait for 100 ns;
+            wait for 10 ns;
             if( MEM_MemWrite = '1') then
                 report "writing: " & str(MEM_Read2Data);
             end if;
+            --report "IF_PC: " & str(IF_PC);
+            --report "IF_PC_4: " & str(IF_PC_4);
+            --report "IF_NextPC: " & str(IF_NextPC);
+            --report "ID_NextPC: " & str(ID_NextPC);
             exit when ID_halt='0';
         end loop;
         
@@ -183,19 +188,27 @@ architecture rtl of CPU is
         wait until clk = '1';
         wait until clk = '0';
         wait until clk = '1';
+        wait until clk = '0';
+        wait until clk = '1';
+        wait until clk = '0';
+        wait until clk = '1';
+        wait until clk = '0';
+        wait until clk = '1';
 
         reset <= '1';
+        
+        report "STARTING THE CPU";
         
         -- change false to true to verify first 25 instructions of test
         if (true) then
 
             wait until (clk = '0' and reset = '1');
     
-            -- 1: nop
+            -- 1: many nops
                 assert IF_inst = x"00000000"
                     report "Instruction not NOP:" & str(IF_inst);
                 assert IF_PC = x"00000000"
-                    report "Bad PC:" & str(IF_inst);
+                    report "1Bad PC:" & str(IF_PC);
                     
                 wait until clk = '1';
                 wait until clk = '0';
@@ -203,7 +216,7 @@ architecture rtl of CPU is
                 assert IF_inst = x"00000000"
                     report "Instruction not NOP:" & str(IF_inst);
                 assert IF_PC = x"00000004"
-                    report "Bad PC:" & str(IF_inst);
+                    report "2Bad PC:" & str(IF_PC);
                     
                 wait until clk = '1';
                 wait until clk = '0';
@@ -211,122 +224,180 @@ architecture rtl of CPU is
                 assert IF_inst = x"00000000"
                     report "Instruction not NOP:" & str(IF_inst);
                 assert IF_PC = x"00000008"
-                    report "Bad PC:" & str(IF_inst);
+                    report "3Bad PC:" & str(IF_PC);
                     
                 wait until clk = '1';
                 wait until clk = '0';
     
                 assert IF_inst = x"00000000"
                     report "Instruction not NOP:" & str(IF_inst);
+                assert IF_PC = x"0000000c"
+                    report "4Bad PC:" & str(IF_PC);
                     
                 wait until clk = '1';
                 wait until clk = '0';
     
                 assert IF_inst = x"00000000"
                     report "Instruction not NOP:" & str(IF_inst);
+                assert IF_PC = x"00000010"
+                    report "5Bad PC:" & str(IF_PC);
                     
                 wait until clk = '1';
                 wait until clk = '0';
-    
+
                 assert IF_inst = x"00000000"
                     report "Instruction not NOP:" & str(IF_inst);
+                assert IF_PC = x"00000014"
+                    report "6Bad PC:" & str(IF_PC);
                     
                 wait until clk = '1';
                 wait until clk = '0';
-    
-                assert IF_inst = x"00000000"
-                    report "Instruction not NOP:" & str(IF_inst);
-                    
-                wait until clk = '1';
-                wait until clk = '0';
-    
-                assert IF_inst = x"00000000"
-                    report "Instruction not NOP:" & str(IF_inst);
-                    
-                wait until clk = '1';
-                wait until clk = '0';
-    
-                assert IF_inst = x"00000000"
-                    report "Instruction not NOP:" & str(IF_inst);
-                    
-                wait until clk = '1';
-                wait until clk = '0';
-    
-                assert IF_inst = x"00000000"
-                    report "Instruction not NOP:" & str(IF_inst);
-                    
-                wait until clk = '1';
-                wait until clk = '0';
-    
-                assert IF_inst = x"00000000"
-                    report "Instruction not NOP:" & str(IF_inst);
-                    
-                wait until clk = '1';
-                wait until clk = '0';
-    
+
             -- 2: lw from memory
-            assert IF_PC = x"00000018"
-                report "Bad IF_PC2 = " & str(IF_PC);
-            assert IF_inst = x"8c088000"
-                report "Instruction not lw:" & str(IF_inst);
-            assert EX_ALU_ValueOut = x"00008000"
-                report "2 Bad EX_ALU_ValueOut" & str(EX_ALU_ValueOut);
-            assert WB_WriteData = x"f0f0f0f0"
-                report "2 Bad WB_WriteData" & str(WB_WriteData);
-            assert EX_Read1Data = x"00000000"
-                report "2 Bad EX_Read1Data" & str(EX_Read1Data);
-            assert ID_IsBranching = '0'
-                report "2 Bad ID_IsBranching" & str(ID_IsBranching);
-            
-            wait until clk = '1';
-            wait until clk = '0';
-            
-            --ID
-            
-            wait until clk = '1';
-            wait until clk = '0';
-
-            -- EX
-            
-            assert EX_ALU_ValueOut = x"00008000"
-                report "2 Bad EX_ALU_ValueOut" & str(EX_ALU_ValueOut);
-
-            wait until clk = '1';
-            wait until clk = '0';
-            wait until clk = '1';
-            wait until clk = '0';
-            wait until clk = '1';
-            wait until clk = '0';
-            
-            -- 3: add to $0 (0x00000000)
-            assert IF_PC = x"00000008"
-                report "Bad IF_PC3 = " & str(IF_PC);
-            assert IF_inst = x"00084820"
-                report "Instruction not expected:" & str(IF_inst);
-            assert WB_WriteData = x"f0f0f0f0"
-                report "3 bad WB_WriteData:" & str(WB_WriteData);
-            assert ID_read1Data = x"00000000"
-                report "3 bad ID_read1Data:" & str(ID_read1Data);
-            assert ID_read2Data = x"f0f0f0f0"
-                report "3 bad ID_read2Data:" & str(ID_read2Data);
-            
-            wait until (clk = '0');
-            wait until (clk = '1');
-    
-            
-            -- 4: sw back to memory
-            assert IF_PC = x"0000000c"
-                report "Bad IF_PC4 = " & str(IF_PC);
-            assert IF_inst = x"ac098004"
-                report "Instruction not expected:" & str(IF_inst);
-            wait until (clk = '0');
-            wait until (clk = '1');
-            
-    
+                assert IF_PC = x"00000018"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"8c088000"
+                    report "Instruction not lw:" & str(IF_inst);
                 
+                wait until clk = '1';
+                wait until clk = '0';
+                
+                --ID
+                
+                assert IF_PC = x"0000001c"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert ID_IsBranching = '0'
+                    report "2 Bad ID_IsBranching" & str(ID_IsBranching);
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                -- EX
+                
+                assert IF_PC = x"00000020"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert EX_ALU_ValueOut = x"00008000"
+                    report "2 Bad EX_ALU_ValueOut" & str(EX_ALU_ValueOut);
+                assert EX_Read1Data = x"00000000"
+                    report "2 Bad EX_Read1Data" & str(EX_Read1Data);
+    
+                wait until clk = '1';
+                wait until clk = '0';
+                
+                -- MEM
+                assert IF_PC = x"00000024"
+                    report "Bad IF_PC = " & str(IF_PC);
+                wait until clk = '1';
+                wait until clk = '0';
+                
+                -- WB
+                
+                assert IF_PC = x"00000028"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert WB_WriteData = x"f0f0f0f0"
+                    report "2 Bad WB_WriteData" & str(WB_WriteData);
+                wait until clk = '1';
+                wait until clk = '0';
+
+            -- 3: add to $0 (0x00000000)
+                assert IF_PC = x"0000002c"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00084820"
+                    report "Instruction not expected:" & str(IF_inst);
+                
+                wait until clk = '1';
+                wait until clk = '0';
+        
+                --ID
+                
+                assert IF_PC = x"00000030"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert ID_IsBranching = '0'
+                    report "3 Bad ID_IsBranching" & str(ID_IsBranching);
+                assert ID_read1Data = x"00000000"
+                    report "3 bad ID_read1Data:" & str(ID_read1Data);
+                assert ID_read2Data = x"f0f0f0f0"
+                    report "3 bad ID_read2Data:" & str(ID_read2Data);
+                
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                -- EX
+                
+                assert IF_PC = x"00000034"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert EX_ALU_ValueOut = x"f0f0f0f0"
+                    report "3 Bad EX_ALU_ValueOut" & str(EX_ALU_ValueOut);
+                assert EX_Read1Data = x"00000000"
+                    report "3 Bad EX_Read1Data" & str(EX_Read1Data);
+    
+                wait until clk = '1';
+                wait until clk = '0';
+                
+                -- MEM
+                assert IF_PC = x"00000038"
+                    report "Bad IF_PC = " & str(IF_PC);
+                wait until clk = '1';
+                wait until clk = '0';
+                
+                -- WB
+                
+                assert IF_PC = x"0000003c"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert WB_WriteData = x"f0f0f0f0"
+                    report "3 bad WB_WriteData:" & str(WB_WriteData);
+                wait until clk = '1';
+                wait until clk = '0';            
+
+            -- 4: sw back to memory
+                assert IF_PC = x"00000040"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"ac098004"
+                    report "Instruction not expected:" & str(IF_inst);
+                wait until clk = '1';
+                wait until clk = '0';            
+            
+                --ID
+                
+                assert IF_PC = x"00000044"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert ID_IsBranching = '0'
+                    report "4 Bad ID_IsBranching" & str(ID_IsBranching);
+                assert ID_read1Data = x"00000000"
+                    report "4 bad ID_read1Data:" & str(ID_read1Data);
+                assert ID_read2Data = x"f0f0f0f0"
+                    report "4 bad ID_read2Data:" & str(ID_read2Data);
+                
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                -- EX
+                
+                assert IF_PC = x"00000048"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert EX_ALU_ValueOut = x"00008004"
+                    report "3 Bad EX_ALU_ValueOut" & str(EX_ALU_ValueOut);
+                assert EX_Read1Data = x"00000000"
+                    report "3 Bad EX_Read1Data" & str(EX_Read1Data);
+    
+                wait until clk = '1';
+                wait until clk = '0';
+                
+                -- MEM
+                assert IF_PC = x"0000004c"
+                    report "Bad IF_PC = " & str(IF_PC);
+                wait until clk = '1';
+                wait until clk = '0';
+                
+                -- WB
+                
+                assert IF_PC = x"00000050"
+                    report "Bad IF_PC = " & str(IF_PC);
+                wait until clk = '1';
+                wait until clk = '0';            
+
             -- 5: lw out again to verify
-            assert IF_PC = x"00000010"
-                report "Bad IF_PC5 = " & str(IF_PC);
+            assert IF_PC = x"00000054"
+                report "Bad IF_PC = " & str(IF_PC);
             assert IF_inst = x"8c0a8004"
                 report "Instruction not lw:" & str(IF_inst);
             assert WB_WriteData = x"f0f0f0f0"

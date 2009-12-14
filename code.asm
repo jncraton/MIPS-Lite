@@ -1,19 +1,30 @@
 : 00000000
+; nops to clear things out
 nop
 nop
 nop
 nop
 nop
 nop
+; test memory access followed by nops
 lw 0 8 8000
-halt
-nop
-nop
-nop
-nop
+nop ;ID
+nop ;EX
+nop ;MEM
+nop ;WB
+; test r-type followed by nops
 add 0 8 9
-halt
+nop ;ID
+nop ;EX
+nop ;MEM
+nop ;WB
+; test sw
 sw 0 9 8004
+nop ;ID
+nop ;EX
+nop ;MEM
+nop ;WB
+halt
 lw 0 10 8004
 lw 0 11 8008
 sub 10 11 12

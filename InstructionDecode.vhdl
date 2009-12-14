@@ -6,7 +6,7 @@ use work.txt_util.all;
 entity InstructionDecode is
     port (clk : in std_logic;
           reset : in std_logic;
-          PC, PC_4 : in std_logic_vector(31 downto 0);
+          PC, PC_4, PC_8 : in std_logic_vector(31 downto 0);
           inst_data : in std_logic_vector(31 downto 0);
           writeReg : in std_logic_vector(4 downto 0);
           writeData : in std_logic_vector(31 downto 0);
@@ -116,9 +116,13 @@ entity InstructionDecode is
                              InstWriteReg(n));
             end generate GEN_writeReg_mux;
             
-            GEN_NextPC: for n in 0 to 31 generate
+            GEN_NextPC: for n in 3 to 31 generate
                 NextPC(n) <= reset and PC_mux_out(n);
+--                NextPC(n) <= PC_mux_out(n) when not reset='0' else '0';
             end generate GEN_NextPC;
+            NextPC(2) <= (not reset) or PC_mux_out(2);
+            NextPC(1) <= '0';
+            NextPC(0) <= '0';
 
             -- PC_branchdst_adder
                 PC_branchDst_adder: entity work.adder32(rtl)
