@@ -20,14 +20,15 @@ architecture rtl of CPU is
         signal IF_PC,IF_PC_4,IF_PC_8: std_logic_vector(31 downto 0);
         
         -- ID
+        signal ID_PC: std_logic_vector(31 downto 0);
         signal ID_writeReg : std_logic_vector(4 downto 0);
-        signal ID_operation :  std_logic_vector(5 downto 0);
-        signal ID_rs,ID_rt,ID_rd :  std_logic_vector(4 downto 0);
-        signal ID_shift_amount :  std_logic_vector(31 downto 0);
-        signal ID_func :  std_logic_vector(5 downto 0);
-        signal ID_jump_address :  std_logic_vector(31 downto 0);
-        signal ID_immediate,ID_immediate_signExtend :  std_logic_vector(31 downto 0);
-        signal ID_Read1Data,ID_Read2Data :  std_logic_vector(31 downto 0);
+        signal ID_operation : std_logic_vector(5 downto 0);
+        signal ID_rs,ID_rt,ID_rd : std_logic_vector(4 downto 0);
+        signal ID_shift_amount : std_logic_vector(31 downto 0);
+        signal ID_func : std_logic_vector(5 downto 0);
+        signal ID_jump_address : std_logic_vector(31 downto 0);
+        signal ID_immediate,ID_immediate_signExtend : std_logic_vector(31 downto 0);
+        signal ID_Read1Data,ID_Read2Data : std_logic_vector(31 downto 0);
         signal ID_Branch,ID_MemRead,ID_MemWrite,ID_RegWrite,ID_SignExtend,ID_Halt,ID_IsBranching: STD_LOGIC;
         signal ID_ALUSrc,ID_MemToReg,ID_RegDst,ID_Jump,ID_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
         
@@ -56,7 +57,6 @@ architecture rtl of CPU is
         signal PC_in: std_logic_vector(31 downto 0);
         signal PC_WE: std_logic;
         signal PC: std_logic_vector(31 downto 0);
-        signal ID_PC: std_logic_vector(31 downto 0);
     
         -- IF_instruction memory
         signal IF_inst_addr: std_logic_vector(31 downto 0);
