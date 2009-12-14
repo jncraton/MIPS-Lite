@@ -286,8 +286,8 @@ architecture rtl of CPU is
             wait for 10 ns;
             clk <= '0';
             wait for 10 ns;
-            if( ID_MemWrite = '1') then
-                report "writing: " & str(data_data);
+            if( MEM_MemWrite = '1') then
+                report "writing: " & str(MEM_Read2Data);
             end if;
             exit when halt='0';
         end loop;
@@ -322,8 +322,6 @@ architecture rtl of CPU is
                 report "Bad PC2 = " & str(PC);
             assert IF_inst = x"8c088000"
                 report "Instruction not lw:" & str(IF_inst);
-            assert data_data = x"f0f0f0f0"
-                report "2 Bad data_data" & str(data_data);
             assert EX_ALU_ValueOut = x"00008000"
                 report "2 Bad EX_ALU_ValueOut" & str(EX_ALU_ValueOut);
             assert rf_writeData = x"f0f0f0f0"
@@ -356,8 +354,6 @@ architecture rtl of CPU is
                 report "Bad PC4 = " & str(PC);
             assert IF_inst = x"ac098004"
                 report "Instruction not expected:" & str(IF_inst);
-            assert data_data = x"f0f0f0f0"
-                report "bad data_data:" & str(data_data);
             wait until (clk = '0');
             wait until (clk = '1');
               
@@ -368,8 +364,6 @@ architecture rtl of CPU is
                 report "Bad PC5 = " & str(PC);
             assert IF_inst = x"8c0a8004"
                 report "Instruction not lw:" & str(IF_inst);
-            assert data_data = x"f0f0f0f0"
-                report "5 Bad data_data" & str(data_data);
             assert rf_writeData = x"f0f0f0f0"
                 report "Bad rf_writeData" & str(rf_writeData);
             wait until (clk = '0');
@@ -381,8 +375,6 @@ architecture rtl of CPU is
                 report "Bad PC = " & str(PC);
             assert IF_inst = x"8c0b8008"
                 report "Instruction not lw:" & str(IF_inst);
-            assert data_data = x"ffffffff"
-                report "6 Bad data_data" & str(data_data);
             assert rf_writeData = x"ffffffff"
                 report "Bad rf_writeData" & str(rf_writeData);
     
