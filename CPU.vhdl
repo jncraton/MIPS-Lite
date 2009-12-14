@@ -250,7 +250,7 @@ architecture rtl of CPU is
  
             -- MEM/WB Register
                               
-            data_data <= MEM_MemOutData;
+            --data_data <= MEM_MemOutData;
             WB_MemOutData <= MEM_MemOutData;
         
         -- WB
