@@ -62,35 +62,50 @@ nop ;ID
 nop ;EX
 nop ;MEM 
 nop ;WB
-halt
 jal 300
+nop ;ID
 
 : 00000300
-nop
-call 400
-nop
-: 0000030c
-nop
-: 00000310
-; this branch should never be taken
-beq 0 17 0010
-nop
-: 00000318
+nop ;EX ;300
+nop ;MEM ;304
+nop ;WB ;308
+call 400 ;30c
+nop ;branch delay slot 310
+; function returns here 
+; this branch should never be taken 
+nop ;314
+beq 0 17 0010 ;318
+nop ;31c
+: 00000320 
 beq 0 0 000c
 
-: 00000328
+: 00000334
 ; this is the branch address
 nop
 ori 0 8 1
-add 8 8 9
-sw 0 9 0000800c
-add 8 9 10
 nop
-sw 0 10 0000800c
+nop
+nop
+nop
+add 8 8 9
+nop
+nop
+nop
+nop
+sw 0 9 0000800c
+nop
+nop
+nop
+nop
 halt
 
 : 00000400
+; nops are required to wb the return address without forwarding/stalling
+nop ;EX
+nop ;MEM
+nop ;WB
 ret
+nop
 
 ; data area starts here
 

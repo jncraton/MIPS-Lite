@@ -692,100 +692,175 @@ architecture rtl of CPU is
                 wait until clk = '0';   
 
             -- 16: jal out of here to 0x0300
-            assert IF_PC = x"00000228"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"0c0000c0"
-                report "Bad IF_inst:" & str(IF_inst);
-            assert WB_WriteData = x"00000214"
-             report "Bad WB_WriteData:" & str(WB_WriteData);
-             
-            wait until (clk = '0');
-            wait until (clk = '1');
+                assert IF_PC = x"00000228"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"0c0000c0"
+                    report "Bad IF_inst:" & str(IF_inst);
+                --assert WB_WriteData = x"00000230"
+                 --report "Bad WB_WriteData:" & str(WB_WriteData);
+                 
+                wait until clk = '1';
+                wait until clk = '0';   
     
-    
+            -- nop in branch delay slot
+                assert IF_PC = x"0000022c"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+
+                wait until clk = '1';
+                wait until clk = '0';
+                
             -- 17: nop to make sure we are in the right place
-            assert IF_PC = x"00000300"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"00000000"
-                report "Bad IF_inst:" & str(IF_inst);
+                assert IF_PC = x"00000300"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
                 
-            wait until (clk = '0');
-            wait until (clk = '1');
+                wait until clk = '1';
+                wait until clk = '0';
     
-    
+            -- nop to delay until I implement forwarding/stalling
+                assert IF_PC = x"00000304"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+
+                wait until clk = '1';
+                wait until clk = '0';   
+                
+            -- nop to delay until I implement forwarding/stalling
+                assert IF_PC = x"00000308"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+
+                wait until clk = '1';
+                wait until clk = '0';   
+                
             -- 18: call a function (jal)
-            assert IF_PC = x"00000304"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"0c000100"
-                report "Bad IF_inst:" & str(IF_inst);
-            assert WB_WriteData = x"0000030c"
-             report "Bad WB_WriteData:" & str(WB_WriteData);
-                
-            assert ID_NextPC = x"00000400"
-                report "ID_NextPC= " & str(ID_NextPC);
-            wait until (clk = '0');
-            wait until (clk = '1');
+                assert IF_PC = x"0000030c"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"0c000100"
+                    report "Bad IF_inst:" & str(IF_inst);
+
+                wait until clk = '1';
+                wait until clk = '0';   
     
+            -- nop in branch delay slot
+                assert IF_PC = x"00000310"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+
+                wait until clk = '1';
+                wait until clk = '0';
+                
+            -- nop to make sure we are in the right place
+                assert IF_PC = x"00000400"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+                
+                wait until clk = '1';
+                wait until clk = '0';
+    
+            -- nop to delay until I implement forwarding/stalling
+                assert IF_PC = x"00000404"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+
+                wait until clk = '1';
+                wait until clk = '0';   
+                
+            -- nop to delay until I implement forwarding/stalling
+                assert IF_PC = x"00000408"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+
+                wait until clk = '1';
+                wait until clk = '0';   
+                
     
             -- 19: ret from function (jr)
-            assert IF_PC = x"00000400"
-                report "Bad IF_PC 1= " & str(IF_PC);
-            assert IF_inst = x"03e00008"
-                report "Bad IF_inst:" & str(IF_inst);
-            
-            wait until (clk = '0');
-            wait until (clk = '1');
+                assert IF_PC = x"0000040c"
+                    report "Bad IF_PC 1= " & str(IF_PC);
+                assert IF_inst = x"03e00008"
+                    report "Bad IF_inst:" & str(IF_inst);
+                
+                wait until clk = '1';
+                wait until clk = '0';   
     
+            -- nop in branch delay slot
+                assert IF_PC = x"00000410"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+
+                wait until clk = '1';
+                wait until clk = '0';
     
             -- 20: nop just to check where we are
-            assert IF_PC = x"0000030c"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"00000000"
-                report "Bad IF_inst:" & str(IF_inst);
-    
-            wait until (clk = '0');
-            wait until (clk = '1');
+                assert IF_PC = x"00000314"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+        
+                wait until clk = '1';
+                wait until clk = '0';
     
     
             -- 21: beq that will fail
-            assert IF_PC = x"00000310"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"10110010"
-                report "Bad IF_inst:" & str(IF_inst);
-            wait until (clk = '0');
-            wait until (clk = '1');
+                assert IF_PC = x"00000318"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"10110010"
+                    report "Bad IF_inst:" & str(IF_inst);
+
+                wait until clk = '1';
+                wait until clk = '0';
     
     
             -- 22: nop to make sure we didn't branch
-            assert IF_PC = x"00000314"
-                report "Bad IF_PC (should not have branched) = " & str(IF_PC);
-            assert IF_inst = x"00000000"
-                report "Bad IF_inst:" & str(IF_inst);
+                assert IF_PC = x"0000031c"
+                    report "Bad IF_PC (should not have branched) = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
     
-            wait until (clk = '0');
-            wait until (clk = '1');
+                wait until clk = '1';
+                wait until clk = '0';
     
     
             -- 23: beq that will succeed
-            assert IF_PC = x"00000318"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"1000000c"
-                report "Bad IF_inst:" & str(IF_inst);
-            assert ID_nextPC = x"00000328"
-                report "Bad ID_nextPC:" & str(ID_nextPC);
-            
-            wait until (clk = '0');
-            wait until (clk = '1');
+                assert IF_PC = x"00000320"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"1000000c"
+                    report "Bad IF_inst:" & str(IF_inst);
+                --assert ID_nextPC = x"00000328"
+                    --report "Bad ID_nextPC:" & str(ID_nextPC);
+                
+                wait until clk = '1';
+                wait until clk = '0';
     
     
+            -- nop in branch delay slot
+                assert IF_PC = x"00000324"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+
+                wait until clk = '1';
+                wait until clk = '0';
+
             -- 24: nop to see that we took the branch
-            assert IF_PC = x"00000328"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"00000000"
-                report "Bad IF_inst:" & str(IF_inst);
+                assert IF_PC = x"00000334"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
     
-            wait until (clk = '0');
-            wait until (clk = '1');
+                wait until clk = '1';
+                wait until clk = '0';
             
             -- 25+ do stuff until halt
         end if;
