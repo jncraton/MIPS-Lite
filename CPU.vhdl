@@ -97,25 +97,21 @@ architecture rtl of CPU is
                         ID_Jump,ID_ALUOp);
 
             -- ID/EX Register
-                EX_Operation <= ID_Operation;
-
-                EX_shift_amount <= ID_shift_amount;
-                EX_Func <= ID_func;
-    
-                EX_immediate <= ID_immediate;
-            
-                EX_read1Data <= ID_Read1Data;
-                EX_read2Data <= ID_Read2Data;
-
-                EX_ALUSrc <= ID_ALUSrc;
-                EX_ALUOp <= ID_ALUOp;
-            
-                EX_MemWrite <= ID_MemWrite;
-                EX_MemRead <= ID_MemRead;
-                EX_WriteReg <= ID_WriteReg;
-
-                EX_MemToReg <= ID_MemToReg;
-                EX_PC_8 <= ID_PC_8;
+            Register_ID_EX: entity work.Register_ID_EX(rtl)
+                port map (clk,
+                        EX_Operation , ID_Operation,
+                        EX_Func , ID_func,
+                        EX_shift_amount , ID_shift_amount,
+                        EX_immediate , ID_immediate,
+                        EX_read1Data , ID_Read1Data,
+                        EX_read2Data , ID_Read2Data,
+                        EX_PC_8 , ID_PC_8,
+                        EX_WriteReg , ID_WriteReg,
+                        EX_ALUSrc , ID_ALUSrc,
+                        EX_ALUOp , ID_ALUOp,
+                        EX_MemWrite , ID_MemWrite,
+                        EX_MemRead , ID_MemRead,
+                        EX_MemToReg , ID_MemToReg);
 
         -- EX
             Execute: entity work.Execute(rtl)
