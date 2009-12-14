@@ -122,15 +122,15 @@ architecture rtl of CPU is
                         EX_ALU_ValueOut);
                     
             -- EX\MEM Register
-                MEM_ALU_ValueOut <= EX_ALU_ValueOut;
-                MEM_Read2Data <= EX_Read2Data;
-                MEM_MemWrite <= EX_MemWrite;
-                MEM_MemRead <= EX_MemRead;
-    
-                MEM_WriteReg <= EX_WriteReg;
-    
-                MEM_MemToReg <= EX_MemToReg;
-                MEM_PC_8 <= EX_PC_8;
+            Register_EX_MEM: entity work.Register_EX_MEM(rtl)
+                port map (clk,
+                          MEM_ALU_ValueOut , EX_ALU_ValueOut,
+                          MEM_Read2Data , EX_Read2Data,
+                          MEM_PC_8 , EX_PC_8,
+                          MEM_WriteReg , EX_WriteReg,
+                          MEM_MemWrite , EX_MemWrite,
+                          MEM_MemRead , EX_MemRead,
+                          MEM_MemToReg , EX_MemToReg);
 
         -- MEM
             Memory: entity work.Memory(rtl)
@@ -141,12 +141,19 @@ architecture rtl of CPU is
                         MEM_MemOutData);
  
             -- MEM/WB Register
-                WB_MemOutData <= MEM_MemOutData;
-                WB_ALU_ValueOut <= MEM_ALU_ValueOut;
-                WB_WriteReg <= MEM_WriteReg;
-                WB_MemToReg <= MEM_MemToReg;
-                WB_PC_8 <= MEM_PC_8;
+            Register_MEM_WB: entity work.Register_MEM_WB(rtl)
+                port map (clk,
+                          WB_MemOutData , MEM_MemOutData,
+                          WB_ALU_ValueOut , MEM_ALU_ValueOut,
+                          WB_PC_8 , MEM_PC_8,
+                          WB_WriteReg , MEM_WriteReg,
+                          WB_MemToReg , MEM_MemToReg);
             
+--                WB_MemOutData <= MEM_MemOutData;
+ --               WB_ALU_ValueOut <= MEM_ALU_ValueOut;
+  --              WB_PC_8 <= MEM_PC_8;
+   --             WB_WriteReg <= MEM_WriteReg;
+    --            WB_MemToReg <= MEM_MemToReg;
         -- WB
                 Writeback: entity work.Writeback(rtl)
                     port map (clk,
