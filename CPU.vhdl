@@ -162,18 +162,14 @@ architecture rtl of CPU is
     clock: process begin
         loop
             clk <= '0'; 
-            wait for 5 ns;
+            wait for 1 ns;
             clk <= '1';
-            wait for 5 ns;
+            wait for 1 ns;
             clk <= '0';
-            wait for 10 ns;
+            wait for 1 ns;
             if( MEM_MemWrite = '1') then
                 report "writing: " & str(MEM_Read2Data);
             end if;
-            --report "IF_PC: " & str(IF_PC);
-            --report "IF_PC_4: " & str(IF_PC_4);
-            --report "IF_NextPC: " & str(IF_NextPC);
-            --report "ID_NextPC: " & str(ID_NextPC);
             exit when ID_halt='0';
         end loop;
         
