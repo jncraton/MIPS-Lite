@@ -5,7 +5,8 @@ use work.txt_util.all;
 
 entity InstructionDecode is
     port (clk : in std_logic;
-          PC : in std_logic_vector(31 downto 0);
+          reset : in std_logic;
+          PC, PC_4 : in std_logic_vector(31 downto 0);
           inst_data : in std_logic_vector(31 downto 0);
           writeReg : in std_logic_vector(4 downto 0);
           writeData : in std_logic_vector(31 downto 0);
@@ -19,6 +20,7 @@ entity InstructionDecode is
           immediate_signExtend : out std_logic_vector(31 downto 0);
           Read1Data, Read2Data : out std_logic_vector(31 downto 0);
           InstWriteReg : out std_logic_vector(4 downto 0);
+          NextPC : out std_logic_vector(31 downto 0);
           Branch,MemRead,MemWrite,RegWrite,SignExtend,Halt, IsBranching:OUT STD_LOGIC;
           ALUSrc,MemToReg,RegDst,Jump,ALUOp:OUT STD_LOGIC_VECTOR(1 DOWNTO 0));
 
@@ -27,11 +29,22 @@ entity InstructionDecode is
     architecture rtl of InstructionDecode is
         signal rf_reg1, rf_reg2, rf_writeReg : std_logic_vector(4 downto 0);
         signal rf_WE : std_logic;
-        signal Branch_i, Equal : std_logic;
+        signal Branch_i, Equal, isBranching_i : std_logic;
+        signal Jump_i : std_logic_vector(1 downto 0);
         signal rs_i, rt_i, rd_i : std_logic_vector(4 downto 0);
         signal regdst_i : STD_LOGIC_VECTOR(1 DOWNTO 0);
         signal read1Data_i, read2Data_i : std_logic_vector(31 downto 0);
-        
+        signal immediate_signExtend_i : std_logic_vector(31 downto 0);
+        signal jump_address_i : std_logic_vector(31 downto 0);
+
+        signal PC_branchDst_adder_in: std_logic_vector(31 downto 0);
+        signal PC_branchDst_adder_ci : std_logic;
+        signal PC_branchDst_adder_out : std_logic_vector(31 downto 0);
+        signal PC_branchDst_adder_co : std_logic;
+        signal PC_branchDst_out : std_logic_vector(31 downto 0);
+        signal PC_mux_in: std_logic_vector(127 downto 0);
+        signal PC_mux_sel: std_logic_vector(1 downto 0);
+        signal PC_mux_out: std_logic_vector(31 downto 0);        
     begin
             -- break up intruction instruction
                 operation <= inst_data(31 downto 26);
@@ -44,16 +57,19 @@ entity InstructionDecode is
                 shift_amount(31 downto 5) <= "000000000000000000000000000";
                 shift_amount(4 downto 0) <= inst_data(10 downto 6);
                 func <= inst_data(5 downto 0);
-                jump_address(31 downto 28) <= PC(31 downto 28);
-                jump_address(27 downto 2) <= inst_data(25 downto 0);
-                jump_address(1 downto 0) <= "00";
+                jump_address_i(31 downto 28) <= PC(31 downto 28);
+                jump_address_i(27 downto 2) <= inst_data(25 downto 0);
+                jump_address_i(1 downto 0) <= "00";
+                jump_address <= jump_address_i;
     
                 immediate(31 downto 16) <= x"0000";
                 immediate(15 downto 0) <= inst_data(15 downto 0);
                 GEN_signExtend: for n in 31 downto 16 generate
                     immediate_signExtend(n) <= inst_data(15);
+                    immediate_signExtend_i(n) <= inst_data(15);
                 end generate GEN_signExtend;
                 immediate_signExtend(15 downto 0) <= inst_data(15 downto 0);
+                immediate_signExtend_i(15 downto 0) <= inst_data(15 downto 0);
                 
             -- connect halt
                 halt <= not (inst_data(31) and inst_data (30) and inst_data(29) and 
@@ -75,15 +91,17 @@ entity InstructionDecode is
                               Branch_i,MemRead,MemWrite,
                               rf_WE,SignExtend,
                               ALUSrc,MemToReg,RegDst_i,
-                              Jump,ALUOp);
+                              Jump_i,ALUOp);
                               
             Branch <= Branch_i;
             RegDst <= RegDst_i;
+            Jump <= Jump_i;
                               
             -- beq comparator
                 comparator: entity work.comparator(rtl)
                     port map (read1Data_i, read2Data_i, equal);
                     
+            IsBranching_i <= equal and Branch_i;
             IsBranching <= equal and Branch_i;
 
             -- writeReg_mux - selects which register should be written to
@@ -97,5 +115,38 @@ entity InstructionDecode is
                              RegDst_i(1),
                              InstWriteReg(n));
             end generate GEN_writeReg_mux;
+            
+            GEN_NextPC: for n in 0 to 31 generate
+                NextPC(n) <= reset and PC_mux_out(n);
+            end generate GEN_NextPC;
+
+            -- PC_branchdst_adder
+                PC_branchDst_adder: entity work.adder32(rtl)
+                    port map(PC, immediate_signExtend_i, --TODO: should be PC_4
+                             -- carry in is 0
+                             '0',
+                             PC_branchDst_adder_out,
+                             PC_branchDst_adder_co);                    
+            
+            -- PC_branch_dst mux (either PC+4 or branch location)
+            GEN_branchDst_mux: for n in 0 to 31 generate
+                PC_branch_dst_adder: entity work.mux2to1_indiv(rtl)
+                    port map(PC_4(n), 
+                             PC_branchDst_adder_out(n),
+                             isBranching_i,
+                             PC_branchDst_out(n));
+            end generate GEN_branchDst_mux;                         
+            
+            -- PC in mux - selects the input to the PC
+                -- options are PC+4 normally, imm_pc_final on branch, or 0x00000000 for reset
+                GEN_PC_mux: for n in 0 to 31 generate
+                    PC_mux: entity work.mux4to1_indiv(rtl)
+                        -- zero unless reset is high
+                        port map(PC_branchDst_out(n), jump_address_i(n),
+                                 read1Data_i(n), '0',
+                                 Jump_i(0),
+                                 Jump_i(1),
+                                 PC_mux_out(n));
+                end generate GEN_PC_mux;
             
     end rtl;

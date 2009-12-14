@@ -26,7 +26,7 @@ architecture rtl of CPU is
         signal IF_inst_noe: std_logic;
         
         -- ID
-        signal ID_PC: std_logic_vector(31 downto 0);
+        signal ID_PC, ID_PC_4: std_logic_vector(31 downto 0);
         signal ID_inst: std_logic_vector(31 downto 0);
         signal ID_writeRegIn, ID_writeReg : std_logic_vector(4 downto 0);
         signal ID_operation : std_logic_vector(5 downto 0);
@@ -36,6 +36,7 @@ architecture rtl of CPU is
         signal ID_jump_address : std_logic_vector(31 downto 0);
         signal ID_immediate,ID_immediate_signExtend : std_logic_vector(31 downto 0);
         signal ID_Read1Data,ID_Read2Data : std_logic_vector(31 downto 0);
+        signal ID_NextPC : std_logic_vector(31 downto 0);
         signal ID_writeData: std_logic_vector(31 DOWNTO 0);
         signal ID_Branch,ID_MemRead,ID_MemWrite,ID_RegWrite,ID_SignExtend,ID_Halt,ID_IsBranching: STD_LOGIC;
         signal ID_ALUSrc,ID_MemToReg,ID_RegDst,ID_Jump,ID_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
@@ -123,60 +124,31 @@ architecture rtl of CPU is
         -- IF
             -- InstructionFetch
                 InstructionFetch: entity work.InstructionFetch(rtl)
-                    port map (clk, IF_PC_in, IF_inst, IF_PC, IF_PC_4, IF_PC_8);
+                    port map (clk, ID_NextPC, IF_inst, IF_PC, IF_PC_4, IF_PC_8);
             
             GEN_IF_PC_in: for n in 0 to 31 generate
                 IF_PC_in(n) <= reset and PC_mux_out(n);
             end generate GEN_IF_PC_in;
 
-            -- PC_branchdst_adder
-                PC_branchDst_adder: entity work.adder32(rtl)
-                    port map(IF_PC, immediate_signExtend,
-                             -- carry in is 0
-                             '0',
-                             PC_branchDst_adder_out,
-                             PC_branchDst_adder_co);                    
-            
-            -- PC_branch_dst mux (either PC+4 or branch location)
-            GEN_branchDst_mux: for n in 0 to 31 generate
-                PC_branch_dst_adder: entity work.mux2to1_indiv(rtl)
-                    port map(IF_PC_4(n), 
-                             PC_branchDst_adder_out(n),
-                             ID_isBranching,
-                             PC_branchDst_out(n));
-            end generate GEN_branchDst_mux;                         
-            
-            -- PC in mux - selects the input to the PC
-                -- options are PC+4 normally, imm_pc_final on branch, or 0x00000000 for reset
-                GEN_PC_mux: for n in 0 to 31 generate
-                    PC_mux: entity work.mux4to1_indiv(rtl)
-                        -- zero unless reset is high
-                        port map(PC_branchDst_out(n), jump_address(n),
-                                 rf_read1Data(n), '0',
-                                 ID_Jump(0),
-                                 ID_Jump(1),
-                                 PC_mux_out(n));
-                end generate GEN_PC_mux;
-                
             -- IF/ID Register
                 ID_inst <= IF_inst;
                 ID_PC <= IF_PC;
+                ID_PC_4 <= IF_PC_4;
                 -- TODO: this should come from EX or MEM stage
                 ID_writeData <= rf_writeData;
                 ID_writeReg <= rf_writeReg;
-                --isBranching <= '0';--ID_isBranching;
         
         -- ID
 
-            
             -- InstructionDecode
             InstructionDecode: entity work.InstructionDecode(rtl)
-                port map (clk, ID_PC, ID_inst, WB_WriteReg, ID_writeData,
+                port map (clk, reset, ID_PC, ID_PC_4, ID_inst, WB_WriteReg, ID_writeData,
                         ID_Operation, ID_rs, ID_rt, ID_rd,
                         ID_shift_amount, ID_func, ID_jump_address,
                         ID_immediate, ID_immediate_signExtend,
                         ID_Read1Data, ID_Read2Data,
                         ID_WriteReg,
+                        ID_NextPC,
                         ID_Branch,ID_MemRead,ID_MemWrite,
                         ID_RegWrite,ID_SignExtend,ID_Halt,ID_IsBranching,
                         ID_ALUSrc,ID_MemToReg,ID_RegDst,
@@ -289,11 +261,11 @@ architecture rtl of CPU is
     clock: process begin
         loop
             clk <= '0'; 
-            wait for 10 ns;
+            wait for 100 ns;
             clk <= '1';
-            wait for 10 ns;
+            wait for 100 ns;
             clk <= '0';
-            wait for 10 ns;
+            wait for 100 ns;
             if( MEM_MemWrite = '1') then
                 report "writing: " & str(MEM_Read2Data);
             end if;
@@ -542,6 +514,8 @@ architecture rtl of CPU is
             assert rf_writeData = x"0000030c"
              report "Bad rf_writeData:" & str(rf_writeData);
                 
+            assert ID_NextPC = x"00000400"
+                report "ID_NextPC= " & str(ID_NextPC);
             wait until (clk = '0');
             wait until (clk = '1');
     
@@ -590,6 +564,8 @@ architecture rtl of CPU is
                 report "Bad IF_PC = " & str(IF_PC);
             assert IF_inst = x"10000010"
                 report "Bad IF_inst:" & str(IF_inst);
+            assert ID_nextPC = x"00000328"
+                report "Bad ID_nextPC:" & str(ID_nextPC);
             
             wait until (clk = '0');
             wait until (clk = '1');
