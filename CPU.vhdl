@@ -149,11 +149,6 @@ architecture rtl of CPU is
                           WB_WriteReg , MEM_WriteReg,
                           WB_MemToReg , MEM_MemToReg);
             
---                WB_MemOutData <= MEM_MemOutData;
- --               WB_ALU_ValueOut <= MEM_ALU_ValueOut;
-  --              WB_PC_8 <= MEM_PC_8;
-   --             WB_WriteReg <= MEM_WriteReg;
-    --            WB_MemToReg <= MEM_MemToReg;
         -- WB
                 Writeback: entity work.Writeback(rtl)
                     port map (clk,
@@ -162,7 +157,6 @@ architecture rtl of CPU is
                             WB_PC_8,
                             WB_MemToReg,
                             WB_WriteData);
-        
                                             
     clock: process begin
         loop
@@ -188,6 +182,7 @@ architecture rtl of CPU is
 
         wait until clk = '1';
         wait until clk = '0';
+        wait until clk = '1';
 
         reset <= '1';
         
@@ -197,14 +192,80 @@ architecture rtl of CPU is
             wait until (clk = '0' and reset = '1');
     
             -- 1: nop
-            assert IF_inst = x"00000000"
-                report "Instruction not NOP:" & str(IF_inst);
-                
-            wait until clk = '1';
-            wait until clk = '0';
+                assert IF_inst = x"00000000"
+                    report "Instruction not NOP:" & str(IF_inst);
+                assert IF_PC = x"00000000"
+                    report "Bad PC:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                assert IF_inst = x"00000000"
+                    report "Instruction not NOP:" & str(IF_inst);
+                assert IF_PC = x"00000004"
+                    report "Bad PC:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                assert IF_inst = x"00000000"
+                    report "Instruction not NOP:" & str(IF_inst);
+                assert IF_PC = x"00000008"
+                    report "Bad PC:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                assert IF_inst = x"00000000"
+                    report "Instruction not NOP:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                assert IF_inst = x"00000000"
+                    report "Instruction not NOP:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                assert IF_inst = x"00000000"
+                    report "Instruction not NOP:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                assert IF_inst = x"00000000"
+                    report "Instruction not NOP:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                assert IF_inst = x"00000000"
+                    report "Instruction not NOP:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                assert IF_inst = x"00000000"
+                    report "Instruction not NOP:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                assert IF_inst = x"00000000"
+                    report "Instruction not NOP:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                assert IF_inst = x"00000000"
+                    report "Instruction not NOP:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';
     
             -- 2: lw from memory
-            assert IF_PC = x"00000004"
+            assert IF_PC = x"00000018"
                 report "Bad IF_PC2 = " & str(IF_PC);
             assert IF_inst = x"8c088000"
                 report "Instruction not lw:" & str(IF_inst);
@@ -219,7 +280,24 @@ architecture rtl of CPU is
             
             wait until clk = '1';
             wait until clk = '0';
-    
+            
+            --ID
+            
+            wait until clk = '1';
+            wait until clk = '0';
+
+            -- EX
+            
+            assert EX_ALU_ValueOut = x"00008000"
+                report "2 Bad EX_ALU_ValueOut" & str(EX_ALU_ValueOut);
+
+            wait until clk = '1';
+            wait until clk = '0';
+            wait until clk = '1';
+            wait until clk = '0';
+            wait until clk = '1';
+            wait until clk = '0';
+            
             -- 3: add to $0 (0x00000000)
             assert IF_PC = x"00000008"
                 report "Bad IF_PC3 = " & str(IF_PC);
