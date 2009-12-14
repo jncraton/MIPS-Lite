@@ -71,14 +71,6 @@ architecture rtl of CPU is
         signal WB_WriteReg :std_logic_vector(4 downto 0);
         signal WB_MemToReg :std_logic_vector(1 downto 0);
     
-        -- data memory
-        signal data_addr: std_logic_vector(31 downto 0);
-        signal data_data: std_logic_vector(31 downto 0);
-        signal data_ncs: std_logic;
-        signal data_nwe: std_logic;
-        signal data_noe: std_logic;
-        signal data_output: std_logic_vector(31 downto 0);
-        signal data_input: std_logic_vector(31 downto 0);
         
         --IF_instruction pieces
         
