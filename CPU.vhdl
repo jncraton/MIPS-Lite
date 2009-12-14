@@ -14,7 +14,6 @@ architecture rtl of CPU is
     -- signal definitions
         signal clk: std_logic;
         signal reset: std_logic;
-        signal halt: std_logic;
         
         -- IF
         signal IF_PC,IF_PC_4,IF_PC_8: std_logic_vector(31 downto 0);
@@ -73,9 +72,8 @@ architecture rtl of CPU is
 
     begin
         -- IF
-            -- InstructionFetch
-                InstructionFetch: entity work.InstructionFetch(rtl)
-                    port map (clk, ID_NextPC, IF_inst, IF_PC, IF_PC_4, IF_PC_8);
+            InstructionFetch: entity work.InstructionFetch(rtl)
+                port map (clk, ID_NextPC, IF_inst, IF_PC, IF_PC_4, IF_PC_8);
             
             -- IF/ID Register
                 ID_inst <= IF_inst;
@@ -84,8 +82,6 @@ architecture rtl of CPU is
                 ID_PC_8 <= IF_PC_8;
         
         -- ID
-
-            -- InstructionDecode
             InstructionDecode: entity work.InstructionDecode(rtl)
                 port map (clk, reset, ID_PC, ID_PC_4, ID_inst, WB_WriteReg, WB_writeData,
                         ID_Operation, ID_rs, ID_rt, ID_rd,
@@ -140,12 +136,12 @@ architecture rtl of CPU is
                 MEM_PC_8 <= EX_PC_8;
 
         -- MEM
-                Memory: entity work.Memory(rtl)
-                    port map (clk,
-                            MEM_Read2Data,
-                            MEM_ALU_ValueOut,
-                            MEM_MemWrite, MEM_MemRead,
-                            MEM_MemOutData);
+            Memory: entity work.Memory(rtl)
+                port map (clk,
+                        MEM_Read2Data,
+                        MEM_ALU_ValueOut,
+                        MEM_MemWrite, MEM_MemRead,
+                        MEM_MemOutData);
  
             -- MEM/WB Register
                 WB_MemOutData <= MEM_MemOutData;
@@ -462,7 +458,7 @@ architecture rtl of CPU is
             -- 23: beq that will succeed
             assert IF_PC = x"00000318"
                 report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"10000010"
+            assert IF_inst = x"1000000c"
                 report "Bad IF_inst:" & str(IF_inst);
             assert ID_nextPC = x"00000328"
                 report "Bad ID_nextPC:" & str(ID_nextPC);

@@ -122,7 +122,7 @@ entity InstructionDecode is
 
             -- PC_branchdst_adder
                 PC_branchDst_adder: entity work.adder32(rtl)
-                    port map(PC, immediate_signExtend_i, --TODO: should be PC_4
+                    port map(PC_4, immediate_signExtend_i, --TODO: should be PC_4
                              -- carry in is 0
                              '0',
                              PC_branchDst_adder_out,

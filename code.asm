@@ -32,7 +32,7 @@ nop
 beq 0 17 0010
 nop
 : 00000318
-beq 0 0 0010
+beq 0 0 000c
 
 : 00000328
 ; this is the branch address
@@ -40,6 +40,9 @@ nop
 ori 0 8 1
 add 8 8 9
 sw 0 9 0000800c
+add 8 9 10
+nop
+sw 0 10 0000800c
 halt
 
 : 00000400
