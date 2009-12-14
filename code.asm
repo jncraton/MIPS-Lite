@@ -97,7 +97,8 @@ nop
 nop
 nop
 nop
-halt
+j 500
+nop
 
 : 00000400
 ; nops are required to wb the return address without forwarding/stalling
@@ -105,6 +106,10 @@ nop ;EX
 nop ;MEM
 nop ;WB
 ret
+nop
+
+:500
+halt
 nop
 
 ; data area starts here

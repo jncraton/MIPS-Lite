@@ -858,7 +858,7 @@ architecture rtl of CPU is
                 wait until clk = '1';
                 wait until clk = '0';
             
-            -- 25+ do stuff until halt
+            -- Begin hazard testing
         end if;
             
         wait;
