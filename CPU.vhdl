@@ -74,12 +74,13 @@ architecture rtl of CPU is
         -- IF
             InstructionFetch: entity work.InstructionFetch(rtl)
                 port map (clk, ID_NextPC, IF_inst, IF_PC, IF_PC_4, IF_PC_8);
-            
-            -- IF/ID Register
-                ID_inst <= IF_inst;
-                ID_PC <= IF_PC;
-                ID_PC_4 <= IF_PC_4;
-                ID_PC_8 <= IF_PC_8;
+               
+            Register_IF_ID: entity work.Register_IF_ID(rtl)
+                port map (clk,
+                          ID_inst, IF_inst,
+                          ID_PC, IF_PC,
+                          ID_PC_4, IF_PC_4,
+                          ID_PC_8, IF_PC_8);
         
         -- ID
             InstructionDecode: entity work.InstructionDecode(rtl)
