@@ -28,7 +28,7 @@ architecture rtl of CPU is
         -- ID
         signal ID_PC: std_logic_vector(31 downto 0);
         signal ID_inst: std_logic_vector(31 downto 0);
-        signal ID_writeReg : std_logic_vector(4 downto 0);
+        signal ID_writeRegIn, ID_writeReg : std_logic_vector(4 downto 0);
         signal ID_operation : std_logic_vector(5 downto 0);
         signal ID_rs,ID_rt,ID_rd : std_logic_vector(4 downto 0);
         signal ID_shift_amount : std_logic_vector(31 downto 0);
@@ -42,25 +42,33 @@ architecture rtl of CPU is
         
         -- EX
 
-        signal EX_operation :  std_logic_vector(5 downto 0);
-        signal EX_func :  std_logic_vector(5 downto 0);
-        signal EX_immediate :  std_logic_vector(31 downto 0);
-        signal EX_shift_amount :  std_logic_vector(31 downto 0);
-        signal EX_Read1Data,EX_Read2Data :  std_logic_vector(31 downto 0);
-        signal EX_ALU_ValueOut :  std_logic_vector(31 downto 0);
+        signal EX_operation :std_logic_vector(5 downto 0);
+        signal EX_func :std_logic_vector(5 downto 0);
+        signal EX_immediate :std_logic_vector(31 downto 0);
+        signal EX_shift_amount :std_logic_vector(31 downto 0);
+        signal EX_Read1Data,EX_Read2Data :std_logic_vector(31 downto 0);
+        signal EX_ALU_ValueOut :std_logic_vector(31 downto 0);
         signal EX_ALUSrc,EX_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
         signal EX_MemWrite, EX_MemRead : std_logic;
+        signal EX_writeReg : std_logic_vector(4 downto 0);
 
         -- MEM
-        signal MEM_Read2Data :  std_logic_vector(31 downto 0);
-        signal MEM_MemOutData :  std_logic_vector(31 downto 0);
-        signal MEM_ALU_ValueOut :  std_logic_vector(31 downto 0);
+        signal MEM_Read2Data :std_logic_vector(31 downto 0);
+        signal MEM_MemOutData :std_logic_vector(31 downto 0);
+        signal MEM_ALU_ValueOut :std_logic_vector(31 downto 0);
         signal MEM_MemWrite, MEM_MemRead : std_logic;
+        signal MEM_PC_8 :std_logic_vector(31 downto 0);
+        signal MEM_WriteReg :std_logic_vector(4 downto 0);
+        signal MEM_MemToReg :std_logic_vector(1 downto 0);
 
         -- WB
         
         signal WB_MemOutData : std_logic_vector(31 downto 0);
-        
+        signal WB_ALU_ValueOut :std_logic_vector(31 downto 0);
+        signal WB_WriteData :std_logic_vector(31 downto 0);
+        signal WB_PC_8 :std_logic_vector(31 downto 0);
+        signal WB_WriteReg :std_logic_vector(4 downto 0);
+        signal WB_MemToReg :std_logic_vector(1 downto 0);
     
     
         -- register file
@@ -127,7 +135,7 @@ architecture rtl of CPU is
                              -- carry in is 0
                              '0',
                              PC_branchDst_adder_out,
-                             PC_branchDst_adder_co);                      
+                             PC_branchDst_adder_co);                    
             
             -- PC_branch_dst mux (either PC+4 or branch location)
             GEN_branchDst_mux: for n in 0 to 31 generate
@@ -138,8 +146,6 @@ architecture rtl of CPU is
                              PC_branchDst_out(n));
             end generate GEN_branchDst_mux;                         
             
-            --isBranching <= ALU_Zero and ID_Branch;
-                             
             -- PC in mux - selects the input to the PC
                 -- options are PC+4 normally, imm_pc_final on branch, or 0x00000000 for reset
                 GEN_PC_mux: for n in 0 to 31 generate
@@ -164,16 +170,17 @@ architecture rtl of CPU is
 
             
             -- InstructionDecode
-                InstructionDecode: entity work.InstructionDecode(rtl)
-                    port map (clk, ID_PC, ID_inst, ID_writeReg, ID_writeData,
-                              ID_Operation, ID_rs, ID_rt, ID_rd,
-                              ID_shift_amount, ID_func, ID_jump_address,
-                              ID_immediate, ID_immediate_signExtend,
-                              ID_Read1Data, ID_Read2Data,
-                              ID_Branch,ID_MemRead,ID_MemWrite,
-                              ID_RegWrite,ID_SignExtend,ID_Halt,ID_IsBranching,
-                              ID_ALUSrc,ID_MemToReg,ID_RegDst,
-                              ID_Jump,ID_ALUOp);
+            InstructionDecode: entity work.InstructionDecode(rtl)
+                port map (clk, ID_PC, ID_inst, WB_WriteReg, ID_writeData,
+                        ID_Operation, ID_rs, ID_rt, ID_rd,
+                        ID_shift_amount, ID_func, ID_jump_address,
+                        ID_immediate, ID_immediate_signExtend,
+                        ID_Read1Data, ID_Read2Data,
+                        ID_WriteReg,
+                        ID_Branch,ID_MemRead,ID_MemWrite,
+                        ID_RegWrite,ID_SignExtend,ID_Halt,ID_IsBranching,
+                        ID_ALUSrc,ID_MemToReg,ID_RegDst,
+                        ID_Jump,ID_ALUOp);
 
             -- ID/EX Register
                 EX_Operation <= ID_Operation;
@@ -191,6 +198,7 @@ architecture rtl of CPU is
             
                 EX_MemWrite <= ID_MemWrite;
                 EX_MemRead <= ID_MemRead;
+                EX_WriteReg <= ID_WriteReg;
             -- Map to globals TODO: this goes away
             
                 operation <= ID_Operation;
@@ -213,36 +221,47 @@ architecture rtl of CPU is
                 rf_reg2 <= rt;
 
         -- EX
-                Execute: entity work.Execute(rtl)
-                    port map (clk,EX_Operation, EX_Func, 
-                              EX_Read1Data, EX_Read2Data,
-                              EX_immediate, EX_shift_amount,
-                              EX_ALUSrc, EX_ALUOp,
-                              EX_ALU_ValueOut);
+            Execute: entity work.Execute(rtl)
+                port map (clk,EX_Operation, EX_Func, 
+                        EX_Read1Data, EX_Read2Data,
+                        EX_immediate, EX_shift_amount,
+                        EX_ALUSrc, EX_ALUOp,
+                        EX_ALU_ValueOut);
                     
-              -- EX\MEM Register
-              MEM_ALU_ValueOut <= EX_ALU_ValueOut;
-              MEM_Read2Data <= EX_Read2Data;
-              MEM_MemWrite <= EX_MemWrite;
-              MEM_MemRead <= EX_MemRead;
-              
-              --TODO: this goes away
-              ALU_ValueOut <= EX_ALU_ValueOut;
+            -- EX\MEM Register
+            MEM_ALU_ValueOut <= EX_ALU_ValueOut;
+            MEM_Read2Data <= EX_Read2Data;
+            MEM_MemWrite <= EX_MemWrite;
+            MEM_MemRead <= EX_MemRead;
+
+            MEM_WriteReg <= EX_WriteReg;
+            
+            --TODO: this goes away
+            ALU_ValueOut <= EX_ALU_ValueOut;
 
         -- MEM
                 Memory: entity work.Memory(rtl)
                     port map (clk,
-                              MEM_Read2Data,
-                              MEM_ALU_ValueOut,
-                              MEM_MemWrite, MEM_MemRead,
-                              MEM_MemOutData);
+                            MEM_Read2Data,
+                            MEM_ALU_ValueOut,
+                            MEM_MemWrite, MEM_MemRead,
+                            MEM_MemOutData);
  
             -- MEM/WB Register
-                              
-            --data_data <= MEM_MemOutData;
+                            
             WB_MemOutData <= MEM_MemOutData;
-        
+            WB_ALU_ValueOut <= MEM_ALU_ValueOut;
+            WB_WriteReg <= MEM_WriteReg;
+            
         -- WB
+                Writeback: entity work.Writeback(rtl)
+                    port map (clk,
+                            WB_ALU_ValueOut,
+                            WB_MemOutData,
+                            WB_PC_8,
+                            WB_MemToReg,
+                            WB_WriteData);
+        
             -- GEN_rf_writeData_mux selects data input for reg file
                 GEN_rf_writeData_mux: for n in 0 to 31 generate
                     rf_writeData_mux: entity work.mux4to1_indiv(rtl)
@@ -266,7 +285,7 @@ architecture rtl of CPU is
                              ID_RegDst(1),
                              rf_WriteReg(n));
             end generate GEN_writeReg_mux;
-                                              
+                                            
     clock: process begin
         loop
             clk <= '0'; 
@@ -332,8 +351,13 @@ architecture rtl of CPU is
                 report "bad write reg:" & str(rf_writeReg);
             assert rf_writeData = x"f0f0f0f0"
                 report "3 bad rf_writeData:" & str(rf_writeData);
+            assert ID_read1Data = x"00000000"
+                report "3 bad ID_read1Data:" & str(ID_read1Data);
+            assert ID_read2Data = x"f0f0f0f0"
+                report "3 bad ID_read2Data:" & str(ID_read2Data);
             assert ALU_ValueOut = x"f0f0f0f0"
                 report "3 bad ALU_ValueOut:" & str(ALU_ValueOut);
+            
             wait until (clk = '0');
             wait until (clk = '1');
     
@@ -345,7 +369,7 @@ architecture rtl of CPU is
                 report "Instruction not expected:" & str(IF_inst);
             wait until (clk = '0');
             wait until (clk = '1');
-              
+            
     
                 
             -- 5: lw out again to verify
@@ -357,7 +381,7 @@ architecture rtl of CPU is
                 report "Bad rf_writeData" & str(rf_writeData);
             wait until (clk = '0');
             wait until (clk = '1');
-              
+            
             
             -- 6: lw again
             assert IF_PC = x"00000014"
@@ -369,7 +393,7 @@ architecture rtl of CPU is
     
             wait until (clk = '0');
             wait until (clk = '1');
-               
+             
             
             -- 7: sub these two values
             assert IF_PC = x"00000018"
@@ -470,7 +494,7 @@ architecture rtl of CPU is
             assert IF_inst = x"000f802a"
                 report "Bad IF_inst:" & str(IF_inst);
             assert rf_writeData = x"00000001"
-               report "Bad rf_writeData:" & str(rf_writeData);
+             report "Bad rf_writeData:" & str(rf_writeData);
     
             wait until (clk = '0');
             wait until (clk = '1');
@@ -482,7 +506,7 @@ architecture rtl of CPU is
             assert IF_inst = x"00108827"
                 report "Bad IF_inst:" & str(IF_inst);
             assert rf_writeData = x"fffffffe"
-               report "Bad rf_writeData:" & str(rf_writeData);
+             report "Bad rf_writeData:" & str(rf_writeData);
     
             wait until (clk = '0');
             wait until (clk = '1');
@@ -494,8 +518,8 @@ architecture rtl of CPU is
             assert IF_inst = x"0c0000c0"
                 report "Bad IF_inst:" & str(IF_inst);
             assert rf_writeData = x"00000214"
-               report "Bad rf_writeData:" & str(rf_writeData);
-               
+             report "Bad rf_writeData:" & str(rf_writeData);
+             
             wait until (clk = '0');
             wait until (clk = '1');
     
@@ -516,7 +540,7 @@ architecture rtl of CPU is
             assert IF_inst = x"0c000100"
                 report "Bad IF_inst:" & str(IF_inst);
             assert rf_writeData = x"0000030c"
-               report "Bad rf_writeData:" & str(rf_writeData);
+             report "Bad rf_writeData:" & str(rf_writeData);
                 
             wait until (clk = '0');
             wait until (clk = '1');
