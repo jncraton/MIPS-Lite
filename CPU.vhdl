@@ -92,22 +92,6 @@ architecture rtl of CPU is
         signal data_output: std_logic_vector(31 downto 0);
         signal data_input: std_logic_vector(31 downto 0);
         
-
-        -- PC_branchDst_adder
-        signal PC_branchDst_adder_in: std_logic_vector(31 downto 0);
-        signal PC_branchDst_adder_ci : std_logic;
-        signal PC_branchDst_adder_out : std_logic_vector(31 downto 0);
-        signal PC_branchDst_adder_co : std_logic;
-        
-        -- PC branchDst
-        signal PC_branchDst_out : std_logic_vector(31 downto 0);
-
-
-        -- PC mux
-        signal PC_mux_in: std_logic_vector(127 downto 0);
-        signal PC_mux_sel: std_logic_vector(1 downto 0);
-        signal PC_mux_out: std_logic_vector(31 downto 0);
-        
         --IF_instruction pieces
         
         signal operation: std_logic_vector(5 downto 0);
