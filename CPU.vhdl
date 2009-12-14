@@ -396,30 +396,68 @@ architecture rtl of CPU is
                 wait until clk = '0';            
 
             -- 5: lw out again to verify
-            assert IF_PC = x"00000054"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"8c0a8004"
-                report "Instruction not lw:" & str(IF_inst);
-            assert WB_WriteData = x"f0f0f0f0"
-                report "Bad WB_WriteData" & str(WB_WriteData);
-            wait until (clk = '0');
-            wait until (clk = '1');
-            
+                assert IF_PC = x"00000054"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"8c0a8004"
+                    report "Instruction not lw:" & str(IF_inst);
+                wait until clk = '1';
+                wait until clk = '0';            
             
             -- 6: lw again
-            assert IF_PC = x"00000014"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"8c0b8008"
-                report "Instruction not lw:" & str(IF_inst);
-            assert WB_WriteData = x"ffffffff"
-                report "Bad WB_WriteData" & str(WB_WriteData);
-    
-            wait until (clk = '0');
-            wait until (clk = '1');
+                assert IF_PC = x"00000058"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"8c0b8008"
+                    report "Instruction not lw:" & str(IF_inst);
+        
+                wait until clk = '1';
+                wait until clk = '0';            
              
+                --ID
+                
+                assert IF_PC = x"0000005c"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert ID_IsBranching = '0'
+                    report "6 Bad ID_IsBranching" & str(ID_IsBranching);
+                assert ID_read1Data = x"00000000"
+                    report "6 bad ID_read1Data:" & str(ID_read1Data);
+                
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                -- EX
+                
+                assert IF_PC = x"00000060"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert EX_ALU_ValueOut = x"00008008"
+                    report "6 Bad EX_ALU_ValueOut" & str(EX_ALU_ValueOut);
+                assert EX_Read1Data = x"00000000"
+                    report "6 Bad EX_Read1Data" & str(EX_Read1Data);
+    
+                wait until clk = '1';
+                wait until clk = '0';
+                
+                -- MEM
+                assert IF_PC = x"00000064"
+                    report "Bad IF_PC = " & str(IF_PC);
+
+                -- WB stage of 5
+                assert WB_WriteData = x"f0f0f0f0"
+                    report "Bad WB_WriteData" & str(WB_WriteData);
+
+                wait until clk = '1';
+                wait until clk = '0';
+
+                -- WB
+                
+                assert IF_PC = x"00000068"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert WB_WriteData = x"ffffffff"
+                    report "Bad WB_WriteData" & str(WB_WriteData);
+                wait until clk = '1';
+                wait until clk = '0';            
             
             -- 7: sub these two values
-            assert IF_PC = x"00000018"
+            assert IF_PC = x"0000006c"
                 report "Bad IF_PC = " & str(IF_PC);
             assert IF_inst = x"014b6022"
                 report "Bad IF_inst:" & str(IF_inst);
@@ -429,7 +467,6 @@ architecture rtl of CPU is
             wait until (clk = '0');
             wait until (clk = '1');
     
-            
             -- 7: sll the result by 1
             -- TODO: shifting doesn't actually follow the green card.
             -- rs and rt need to be switched
