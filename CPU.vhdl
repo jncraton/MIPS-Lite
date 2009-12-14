@@ -162,9 +162,9 @@ architecture rtl of CPU is
     clock: process begin
         loop
             clk <= '0'; 
-            wait for 10 ns;
+            wait for 5 ns;
             clk <= '1';
-            wait for 10 ns;
+            wait for 5 ns;
             clk <= '0';
             wait for 10 ns;
             if( MEM_MemWrite = '1') then
