@@ -457,121 +457,242 @@ architecture rtl of CPU is
                 wait until clk = '0';            
             
             -- 7: sub these two values
-            assert IF_PC = x"0000006c"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"014b6022"
-                report "Bad IF_inst:" & str(IF_inst);
-            assert WB_WriteData = x"f0f0f0f1"
-                report "Bad WB_WriteData" & str(WB_WriteData);
+                assert IF_PC = x"0000006c"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"014b6022"
+                    report "Bad IF_inst:" & str(IF_inst);
+        
+                wait until clk = '1';
+                wait until clk = '0';            
     
-            wait until (clk = '0');
-            wait until (clk = '1');
-    
-            -- 7: sll the result by 1
-            -- TODO: shifting doesn't actually follow the green card.
-            -- rs and rt need to be switched
-            assert IF_PC = x"0000001c"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"01806840"
-                report "Bad IF_inst:" & str(IF_inst);
-            assert WB_WriteData = x"e1e1e1e2"
-                report "Bad WB_WriteData" & str(WB_WriteData);
-                
-            wait until (clk = '0');
-            wait until (clk = '1');
+            -- 8: sll the result by 1
+                -- TODO: shifting doesn't actually follow the green card.
+                -- rs and rt need to be switched
+                assert IF_PC = x"00000070"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"01406840"
+                    report "Bad IF_inst:" & str(IF_inst);
+                --assert WB_WriteData = x"e1e1e1e2"
+                    --report "Bad WB_WriteData" & str(WB_WriteData);
+                    
+                wait until clk = '1';
+                wait until clk = '0';            
     
             
-            -- 8: srl the result by 1
-            assert IF_PC = x"00000020"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"01a07042"
-                report "Bad IF_inst:" & str(IF_inst);
-            assert WB_WriteData = x"70f0f0f1"
-                report "Bad WB_WriteData" & str(WB_WriteData);
-                
-            wait until (clk = '0');
-            wait until (clk = '1');
+            -- 9: srl the result by 1
+                assert IF_PC = x"00000074"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"01407042"
+                    report "Bad IF_inst:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';            
      
+                --ID
+                
+                assert IF_PC = x"00000078"
+                    report "Bad IF_PC = " & str(IF_PC);
+                
+                wait until clk = '1';
+                wait until clk = '0';
+    
+                -- EX
+                
+                assert IF_PC = x"0000007c"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert EX_ALU_ValueOut = x"78787878"
+                    report "10 Bad EX_ALU_ValueOut" & str(EX_ALU_ValueOut);
+                assert EX_Read1Data = x"f0f0f0f0"
+                    report "10 Bad EX_Read1Data" & str(EX_Read1Data);
+                assert EX_Read2Data = x"00000000"
+                    report "10 Bad EX_Read2Data" & str(EX_Read2Data);
+                -- writeback for sub
+                assert WB_WriteData = x"f0f0f0f1"
+                    report "Bad WB_WriteData" & str(WB_WriteData);
+    
+                wait until clk = '1';
+                wait until clk = '0';
+                
+                -- MEM
+                assert IF_PC = x"00000080"
+                    report "Bad IF_PC = " & str(IF_PC);
+
+                wait until clk = '1';
+                wait until clk = '0';
+
+                -- WB
+                
+                assert IF_PC = x"00000084"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert WB_WriteData = x"78787878"
+                    report "Bad WB_WriteData" & str(WB_WriteData);
+                wait until clk = '1';
+                wait until clk = '0';   
+                
+             -- 10: j out of here
+                assert IF_PC = x"00000088"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"08000040"
+                    report "Bad IF_inst:" & str(IF_inst);
+                
+                wait until clk = '1';
+                wait until clk = '0';   
+    
+             -- 11: ori to put a value in an address register (jump delay slot)
+                assert IF_PC = x"0000008c"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"340f0200"
+                    report "Bad IF_inst:" & str(IF_inst);
+                
+                wait until clk = '1';
+                wait until clk = '0';   
+
+            -- 12: nops to make sure we are in the right place 
+            --                   (and to make sure the register is ready)
+                assert IF_PC = x"00000100"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';
+
+                -- EX (for the ori)
+                
+                assert IF_PC = x"00000104"
+                    report "Bad IF_PC = " & str(IF_PC);
+    
+                wait until clk = '1';
+                wait until clk = '0';
+                
+                -- MEM
+                assert IF_PC = x"00000108"
+                    report "Bad IF_PC = " & str(IF_PC);
+
+                wait until clk = '1';
+                wait until clk = '0';
+
+                -- WB
+                
+                assert IF_PC = x"0000010c"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert WB_WriteData = x"00000200"
+                    report "Bad WB_WriteData" & str(WB_WriteData);
+
+                wait until clk = '1';
+                wait until clk = '0';   
+
+            -- 12: jr to that value (0x00000200)
+                assert IF_PC = x"00000110"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"01e00008"
+                    report "Bad IF_inst:" & str(IF_inst);
+                
+                wait until clk = '1';
+                wait until clk = '0';   
+    
+            -- 13: nop in branch delay slot
+                assert IF_PC = x"00000114"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+
+                wait until clk = '1';
+                wait until clk = '0';   
+
+            -- 14: nop after the jump just to make sure 
+            --     we arrived in the right place
+                assert IF_PC = x"00000200"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+                    
+                wait until clk = '1';
+                wait until clk = '0';   
+    
+            -- 15: slt comparing r0 and r15 into r16
+                assert IF_PC = x"00000204"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"000f802a"
+                    report "Bad IF_inst:" & str(IF_inst);
+        
+                wait until clk = '1';
+                wait until clk = '0';   
             
-             -- 9: j out of here
-            assert IF_PC = x"00000024"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"08000040"
-                report "Bad IF_inst:" & str(IF_inst);
-            assert ID_Jump = "01"
-                report "Bad ID_Jump" & str(ID_Jump);
-                
-            wait until (clk = '0');
-            wait until (clk = '1');
+            -- nop to delay until I implement forwarding/stalling
+                assert IF_PC = x"00000208"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert ID_Read1Data = x"00000000"
+                    report "Bad ID_Read1Data = " & str(ID_Read1Data);
+                assert ID_Read2Data = x"00000200"
+                    report "Bad ID_Read2Data = " & str(ID_Read2Data);
+
+                wait until clk = '1';
+                wait until clk = '0';   
     
-            
-             -- 10: nop to make sure we are in the right place
-            assert IF_PC = x"00000100"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"00000000"
-                report "Bad IF_inst:" & str(IF_inst);
-                
-            wait until (clk = '0');
-            wait until (clk = '1');
+            -- nop to delay until I implement forwarding/stalling
+                assert IF_PC = x"0000020c"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert EX_ALU_ValueOut = x"00000001"
+                    report "Bad EX_ALU_ValueOut = " & str(EX_ALU_ValueOut);
+
+                wait until clk = '1';
+                wait until clk = '0';   
+
+            -- nop to delay until I implement forwarding/stalling
+                assert IF_PC = x"00000210"
+                    report "Bad IF_PC = " & str(IF_PC);
+
+                wait until clk = '1';
+                wait until clk = '0';   
+
+            -- 16: nor this with r0 to flip all the bits
+                assert IF_PC = x"00000214"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00108827"
+                    report "Bad IF_inst:" & str(IF_inst);
+                assert WB_WriteData = x"00000001"
+                    report "Bad WB_WriteData:" & str(WB_WriteData);
+        
+                wait until clk = '1';
+                wait until clk = '0';   
+
+            -- nop to delay until I implement forwarding/stalling
+                assert IF_PC = x"00000218"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert ID_Read1Data = x"00000000"
+                    report "Bad ID_Read1Data = " & str(ID_Read1Data);
+                assert ID_Read2Data = x"00000001"
+                    report "Bad ID_Read2Data = " & str(ID_Read2Data);
+
+                wait until clk = '1';
+                wait until clk = '0';   
     
-    
-             -- 11: ori to put a value in an address register
-            assert IF_PC = x"00000104"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"340f0200"
-                report "Bad IF_inst:" & str(IF_inst);
-            assert WB_WriteData = x"00000200"
-                report "Bad WB_WriteData" & str(WB_WriteData);
-                
-            wait until (clk = '0');
-            wait until (clk = '1');
-    
-             -- 12: jr to that value (0x00000200)
-            assert IF_PC = x"00000108"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"01e00008"
-                report "Bad IF_inst:" & str(IF_inst);
-                
-            wait until (clk = '0');
-            wait until (clk = '1');
-    
-    
-            -- 13: nop to make sure we are in the right place
-            assert IF_PC = x"00000200"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"00000000"
-                report "Bad IF_inst:" & str(IF_inst);
-                
-            wait until (clk = '0');
-            wait until (clk = '1');
-    
-    
-            -- 14: slt comparing r0 and r15 into r16
-            assert IF_PC = x"00000204"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"000f802a"
-                report "Bad IF_inst:" & str(IF_inst);
-            assert WB_WriteData = x"00000001"
-             report "Bad WB_WriteData:" & str(WB_WriteData);
-    
-            wait until (clk = '0');
-            wait until (clk = '1');
-    
-    
-            -- 15: nor this with r0 to flip all the bits
-            assert IF_PC = x"00000208"
-                report "Bad IF_PC = " & str(IF_PC);
-            assert IF_inst = x"00108827"
-                report "Bad IF_inst:" & str(IF_inst);
-            assert WB_WriteData = x"fffffffe"
-             report "Bad WB_WriteData:" & str(WB_WriteData);
-    
-            wait until (clk = '0');
-            wait until (clk = '1');
-    
-    
+            -- nop to delay until I implement forwarding/stalling
+                assert IF_PC = x"0000021c"
+                    report "Bad IF_PC = " & str(IF_PC);
+
+                wait until clk = '1';
+                wait until clk = '0';   
+
+            -- nop to delay until I implement forwarding/stalling
+                assert IF_PC = x"00000220"
+                    report "Bad IF_PC = " & str(IF_PC);
+
+                wait until clk = '1';
+                wait until clk = '0';   
+
+            -- nop to delay until I implement forwarding/stalling
+                assert IF_PC = x"00000224"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert WB_WriteData = x"fffffffe"
+                    report "Bad WB_WriteData:" & str(WB_WriteData);
+
+                wait until clk = '1';
+                wait until clk = '0';   
+
             -- 16: jal out of here to 0x0300
-            assert IF_PC = x"0000020c"
+            assert IF_PC = x"00000228"
                 report "Bad IF_PC = " & str(IF_PC);
             assert IF_inst = x"0c0000c0"
                 report "Bad IF_inst:" & str(IF_inst);

@@ -30,22 +30,39 @@ nop ;ID
 nop ;EX
 nop ;MEM
 nop ;WB
-halt
+; three instructions in a row without data hazards
 sub 10 11 12
-sll 12 0 13 1
-srl 13 0 14 1
-halt
+sll 10 0 13 1
+srl 10 0 14 1
+nop ;ID
+nop ;EX
+nop ;MEM
+nop ;WB
 j 100
+; this command should run in the jump delay slot
+; it create an address register to use for jr
+ori 0 15 0200
 
 : 00000100
-nop
-ori 0 15 0200
+; nops for the ori to complete completely
+nop ;ID
+nop ;EX
+nop ;MEM
+nop ;WB
 jr 15 0 0 0
 
 : 00000200
 nop
 slt 0 15 16 0
-nor 0 16 17 0 
+nop ;ID
+nop ;EX
+nop ;MEM 
+nor 0 16 17 0 ;WB
+nop ;ID
+nop ;EX
+nop ;MEM 
+nop ;WB
+halt
 jal 300
 
 : 00000300
