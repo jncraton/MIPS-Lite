@@ -70,23 +70,8 @@ architecture rtl of CPU is
         signal WB_PC_8 :std_logic_vector(31 downto 0);
         signal WB_WriteReg :std_logic_vector(4 downto 0);
         signal WB_MemToReg :std_logic_vector(1 downto 0);
-    
-        
-        --IF_instruction pieces
-        
-        signal operation: std_logic_vector(5 downto 0);
-        signal rs: std_logic_vector(4 downto 0);
-        signal rt: std_logic_vector(4 downto 0);
-        signal rd: std_logic_vector(4 downto 0);
-        signal immediate: std_logic_vector(31 downto 0);
-        signal immediate_signExtend: std_logic_vector(31 downto 0);
-        signal shift_amount: std_logic_vector(31 downto 0);
-        signal func: std_logic_vector(5 downto 0);
-        signal jump_address: std_logic_vector(31 downto 0);
 
     begin
-        halt <= ID_halt;
-
         -- IF
             -- InstructionFetch
                 InstructionFetch: entity work.InstructionFetch(rtl)
@@ -190,7 +175,7 @@ architecture rtl of CPU is
             if( MEM_MemWrite = '1') then
                 report "writing: " & str(MEM_Read2Data);
             end if;
-            exit when halt='0';
+            exit when ID_halt='0';
         end loop;
         
         report "CPU Halted";
