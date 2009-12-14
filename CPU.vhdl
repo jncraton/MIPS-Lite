@@ -105,22 +105,19 @@ architecture rtl of CPU is
         signal jump_address: std_logic_vector(31 downto 0);
 
     begin
+        halt <= ID_halt;
+
         -- IF
             -- InstructionFetch
                 InstructionFetch: entity work.InstructionFetch(rtl)
                     port map (clk, ID_NextPC, IF_inst, IF_PC, IF_PC_4, IF_PC_8);
             
-            GEN_IF_PC_in: for n in 0 to 31 generate
-                IF_PC_in(n) <= reset and PC_mux_out(n);
-            end generate GEN_IF_PC_in;
-
             -- IF/ID Register
                 ID_inst <= IF_inst;
                 ID_PC <= IF_PC;
                 ID_PC_4 <= IF_PC_4;
                 -- TODO: this should come from EX or MEM stage
                 ID_writeData <= rf_writeData;
-                ID_writeReg <= rf_writeReg;
         
         -- ID
 
@@ -155,26 +152,6 @@ architecture rtl of CPU is
                 EX_MemWrite <= ID_MemWrite;
                 EX_MemRead <= ID_MemRead;
                 EX_WriteReg <= ID_WriteReg;
-            -- Map to globals TODO: this goes away
-            
-                operation <= ID_Operation;
-                rs <= ID_rs;
-                rt <= ID_rt;
-                rd <= ID_rd;
-                shift_amount <= ID_shift_amount;
-                func <= ID_func;
-                jump_address <= ID_jump_address;
-    
-                immediate <= ID_immediate;
-                immediate_signExtend <= ID_immediate_signExtend;
-            
-                halt <= ID_halt;
-            
-                rf_read1Data <= ID_Read1Data;
-                rf_read2Data <= ID_Read2Data;
-
-                rf_reg1 <= rs;
-                rf_reg2 <= rt;
 
         -- EX
             Execute: entity work.Execute(rtl)
@@ -303,8 +280,6 @@ architecture rtl of CPU is
                 report "Bad IF_PC3 = " & str(IF_PC);
             assert IF_inst = x"00084820"
                 report "Instruction not expected:" & str(IF_inst);
-            assert rf_writeReg = b"01001"
-                report "bad write reg:" & str(rf_writeReg);
             assert rf_writeData = x"f0f0f0f0"
                 report "3 bad rf_writeData:" & str(rf_writeData);
             assert ID_read1Data = x"00000000"
@@ -394,8 +369,6 @@ architecture rtl of CPU is
                 report "Bad IF_PC = " & str(IF_PC);
             assert IF_inst = x"08000040"
                 report "Bad IF_inst:" & str(IF_inst);
-            assert jump_address = x"00000100"
-                report "Bad jump_address" & str(jump_address);
             assert ID_Jump = "01"
                 report "Bad ID_Jump" & str(ID_Jump);
                 
