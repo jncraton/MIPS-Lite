@@ -40,7 +40,17 @@ architecture rtl of CPU is
         signal EX_Read1Data,EX_Read2Data :  std_logic_vector(31 downto 0);
         signal EX_ALU_ValueOut :  std_logic_vector(31 downto 0);
         signal EX_ALUSrc,EX_ALUOp: STD_LOGIC_VECTOR(1 DOWNTO 0);
+        signal EX_MemWrite, EX_MemRead : std_logic;
 
+        -- MEM
+        signal MEM_Read2Data :  std_logic_vector(31 downto 0);
+        signal MEM_MemOutData :  std_logic_vector(31 downto 0);
+        signal MEM_ALU_ValueOut :  std_logic_vector(31 downto 0);
+        signal MEM_MemWrite, MEM_MemRead : std_logic;
+
+        -- WB
+        
+        signal WB_MemOutData : std_logic_vector(31 downto 0);
         
         -- PC
         signal PC_in: std_logic_vector(31 downto 0);
@@ -164,7 +174,7 @@ architecture rtl of CPU is
         -- ID
 
             
-            -- InstructionFetch
+            -- InstructionDecode
                 InstructionDecode: entity work.InstructionDecode(rtl)
                     port map (clk, ID_PC, ID_inst, ID_writeReg, ID_writeData,
                               ID_Operation, ID_rs, ID_rt, ID_rd,
@@ -190,6 +200,8 @@ architecture rtl of CPU is
                 EX_ALUSrc <= ID_ALUSrc;
                 EX_ALUOp <= ID_ALUOp;
             
+                EX_MemWrite <= ID_MemWrite;
+                EX_MemRead <= ID_MemRead;
             -- Map to globals TODO: this goes away
             
                 operation <= ID_Operation;
@@ -219,58 +231,34 @@ architecture rtl of CPU is
                               EX_ALUSrc, EX_ALUOp,
                               EX_ALU_ValueOut);
                     
-            -- ALU
---                ALU: entity work.ALU(rtl)
---                    port map (ALU_Value1, ALU_Value2, ALU_Operation, ALU_ValueOut, 
---                              ALU_Overflow,ALU_Negative,ALU_Zero,ALU_CarryOut);
---                ALU_Operation <= ALUCtrl_Operation;
---
---            -- ALU input 1 comes from the register file output 1
---                ALU_Value1 <= rf_read1Data;
---            
---            -- ALUSrc mux - selects the ALU source (2nd one)
---                GEN_ALUSrc_mux: for n in 0 to 31 generate
---                    ALUSrc_mux: entity work.mux4to1_indiv(rtl)
---                        port map(rf_read2Data(n),
---                                 immediate(n),
---                                 shift_amount(n),
---                                 'X',
---                                 ID_ALUSrc(0),
---                                 ID_ALUSrc(1),
---                                 ALU_Value2(n));
---                end generate GEN_ALUSrc_mux;
---        
---            -- ALU control
---                ALUcontrol: entity work.ALUControl(rtl)
---                    port map (ALUCtrl_ALUOp,ALUCtrl_Func,ALUCtrl_Operation);
---                    
---                ALUCtrl_ALUOp <= ID_ALUOp;
---                ALUCtrl_Func <= func;
-
               -- EX\MEM Register
+              MEM_ALU_ValueOut <= EX_ALU_ValueOut;
+              MEM_Read2Data <= EX_Read2Data;
+              MEM_MemWrite <= EX_MemWrite;
+              MEM_MemRead <= EX_MemRead;
+              
+              --TODO: this goes away
               ALU_ValueOut <= EX_ALU_ValueOut;
 
         -- MEM
-            -- Data Memory
-                data_memory: entity work.sram64kx8(sram_behaviour)
-                    port map (data_ncs, data_addr, data_data, data_nwe, data_noe);
-        
-                data_nwe <= not ID_MemWrite;
-                data_noe <= not ID_MemRead;
-                data_ncs <= not (ID_MemWrite or ID_MemRead);
-                data_addr <= ALU_ValueOut;
-
-            -- connect data_data to reg out 2 with a tristate buffer
-                GEN_memdata_tris: for n in 31 downto 0 generate
-                    data_data(n) <= rf_read2Data(n) when ID_memwrite='1' else 'Z';
-                end generate GEN_memdata_tris;
+                Memory: entity work.Memory(rtl)
+                    port map (clk,
+                              MEM_Read2Data,
+                              MEM_ALU_ValueOut,
+                              MEM_MemWrite, MEM_MemRead,
+                              MEM_MemOutData);
+ 
+            -- MEM/WB Register
+                              
+            data_data <= MEM_MemOutData;
+            WB_MemOutData <= MEM_MemOutData;
         
         -- WB
             -- GEN_rf_writeData_mux selects data input for reg file
                 GEN_rf_writeData_mux: for n in 0 to 31 generate
                     rf_writeData_mux: entity work.mux4to1_indiv(rtl)
                         port map(ALU_ValueOut(n),
-                                 data_data(n),
+                                 WB_MemOutData(n),
                                  IF_PC_8(n), -- should be PC + 8 eventually
                                  '1',
                                  ID_MemToReg(0),
@@ -336,8 +324,8 @@ architecture rtl of CPU is
                 report "Instruction not lw:" & str(IF_inst);
             assert data_data = x"f0f0f0f0"
                 report "2 Bad data_data" & str(data_data);
-            assert data_addr = x"00008000"
-                report "2 Bad data_addr" & str(data_addr);
+            assert EX_ALU_ValueOut = x"00008000"
+                report "2 Bad EX_ALU_ValueOut" & str(EX_ALU_ValueOut);
             assert rf_writeData = x"f0f0f0f0"
                 report "2 Bad rf_writeData" & str(rf_writeData);
             assert EX_Read1Data = x"00000000"
