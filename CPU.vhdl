@@ -215,7 +215,7 @@ architecture rtl of CPU is
         report "STARTING THE CPU";
         
         -- change false to true to verify first 25 instructions of test
-        if (true) then
+        if (false) then
 
             wait until (clk = '0' and reset = '1');
     
