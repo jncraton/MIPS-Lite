@@ -859,6 +859,13 @@ architecture rtl of CPU is
                 wait until clk = '0';
             
             -- Begin hazard testing
+                wait until IF_PC = x"00000500";
+                
+                assert IF_PC = x"00000500"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert IF_inst = x"00000000"
+                    report "Bad IF_inst:" & str(IF_inst);
+            
         end if;
             
         wait;

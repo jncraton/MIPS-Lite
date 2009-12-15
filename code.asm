@@ -108,9 +108,31 @@ nop ;WB
 ret
 nop
 
-:500
-halt
+; forwarding testing goes here
+: 00000500
 nop
+; test data hazard with two nops
+ori 0 8 0001
+nop 
+nop
+nop
+ori 0 9 0002
+nop
+nop
+nop
+add 8 9 10
+nop
+nop
+nop
+nop
+sw 0 10 8100
+nop
+nop
+nop
+nop
+
+: 0000600
+halt
 
 ; data area starts here
 
