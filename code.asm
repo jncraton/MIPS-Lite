@@ -111,20 +111,13 @@ nop
 ; forwarding testing goes here
 : 00000500
 nop
-; test data hazard with two nops
+; test data hazard
 ori 0 8 0001
-nop 
-nop
-nop
 ori 0 9 0002
-nop
-nop
-nop
 add 8 9 10
-nop
-nop
-nop
-nop
+nop ;ID
+nop ;EX
+nop ;MEM
 sw 0 10 8100
 nop
 nop

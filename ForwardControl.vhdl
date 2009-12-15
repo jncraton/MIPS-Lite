@@ -20,20 +20,20 @@ entity ForwardControl is
     architecture rtl of ForwardControl is
     signal cmp1, cmp2, cmp3, cmp4 : std_logic;
     begin
-        comparator_1: entity work.comparator5(rtl)
+        comparator_1: entity work.ForwardComparator(rtl)
             port map (EX_MEM_rd, ID_EX_rs, cmp1);
         ForwardA(1) <= cmp1 and EX_MEM_RegWrite;
 
-        comparator_2: entity work.comparator5(rtl)
+        comparator_2: entity work.ForwardComparator(rtl)
             port map (EX_MEM_rd, ID_EX_rt, cmp2);
         ForwardB(1) <= cmp2 and EX_MEM_RegWrite;
             
-        comparator_3: entity work.comparator5(rtl)
+        comparator_3: entity work.ForwardComparator(rtl)
             port map (MEM_WB_rd, ID_EX_rs, cmp3);
         ForwardA(0) <= cmp3 and MEM_WB_RegWrite;
 
-        comparator_4: entity work.comparator5(rtl)
-            port map (MEM_WB_rd, ID_EX_rt, cmp3);
+        comparator_4: entity work.ForwardComparator(rtl)
+            port map (MEM_WB_rd, ID_EX_rt, cmp4);
         ForwardB(0) <= cmp4 and MEM_WB_RegWrite;
 
     end rtl;

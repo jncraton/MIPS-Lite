@@ -49,14 +49,16 @@ architecture rtl of CPU is
         signal EX_Read1Data,EX_Read2Data :std_logic_vector(31 downto 0);
         signal EX_ALU_ValueOut :std_logic_vector(31 downto 0);
         signal EX_ALUSrc,EX_ALUOp,EX_MemToReg: STD_LOGIC_VECTOR(1 DOWNTO 0);
-        signal EX_MemWrite, EX_MemRead : std_logic;
+        signal EX_MemWrite, EX_MemRead, EX_RegWrite: std_logic;
         signal EX_writeReg : std_logic_vector(4 downto 0);
+        signal EX_Reg1,EX_Reg2 : std_logic_vector(4 downto 0);
+        signal EX_ForwardA, EX_ForwardB : std_logic_vector(1 downto 0);
 
         -- MEM
         signal MEM_Read2Data :std_logic_vector(31 downto 0);
         signal MEM_MemOutData :std_logic_vector(31 downto 0);
         signal MEM_ALU_ValueOut :std_logic_vector(31 downto 0);
-        signal MEM_MemWrite, MEM_MemRead : std_logic;
+        signal MEM_MemWrite, MEM_MemRead, MEM_RegWrite : std_logic;
         signal MEM_PC_8 :std_logic_vector(31 downto 0);
         signal MEM_WriteReg :std_logic_vector(4 downto 0);
         signal MEM_MemToReg :std_logic_vector(1 downto 0);
@@ -69,6 +71,7 @@ architecture rtl of CPU is
         signal WB_PC_8 :std_logic_vector(31 downto 0);
         signal WB_WriteReg :std_logic_vector(4 downto 0);
         signal WB_MemToReg :std_logic_vector(1 downto 0);
+        signal WB_RegWrite : std_logic;
 
     begin
         -- IF
@@ -84,7 +87,8 @@ architecture rtl of CPU is
         
         -- ID
             InstructionDecode: entity work.InstructionDecode(rtl)
-                port map (clk, reset, ID_PC, IF_PC_4, ID_PC_8, ID_inst, WB_WriteReg, WB_writeData,
+                port map (clk, reset, ID_PC, IF_PC_4, ID_PC_8, ID_inst, 
+                        WB_WriteReg, WB_writeData, WB_RegWrite,
                         ID_Operation, ID_rs, ID_rt, ID_rd,
                         ID_shift_amount, ID_func, ID_jump_address,
                         ID_immediate, ID_immediate_signExtend,
@@ -107,19 +111,32 @@ architecture rtl of CPU is
                         EX_read2Data , ID_Read2Data,
                         EX_PC_8 , ID_PC_8,
                         EX_WriteReg , ID_WriteReg,
+                        EX_Reg1 , ID_rs,
+                        EX_Reg2 , ID_rt,
                         EX_ALUSrc , ID_ALUSrc,
                         EX_ALUOp , ID_ALUOp,
                         EX_MemWrite , ID_MemWrite,
                         EX_MemRead , ID_MemRead,
+                        EX_RegWrite , ID_RegWrite,
                         EX_MemToReg , ID_MemToReg,
                         IF_NextPC, ID_NextPC);
 
         -- EX
+            ForwardControl: entity work.ForwardControl(rtl)
+                port map (clk,reset,
+                        MEM_WriteReg, WB_WriteReg, 
+                        WB_RegWrite,
+                        EX_Reg1, EX_Reg2,
+                        MEM_RegWrite,
+                        EX_ForwardA, EX_ForwardB);
+
             Execute: entity work.Execute(rtl)
                 port map (clk,EX_Operation, EX_Func, 
                         EX_Read1Data, EX_Read2Data,
                         EX_immediate, EX_shift_amount,
+                        WB_WriteData, MEM_ALU_ValueOut,
                         EX_ALUSrc, EX_ALUOp,
+                        EX_ForwardA, EX_ForwardB,
                         EX_ALU_ValueOut);
                     
             -- EX\MEM Register
@@ -131,6 +148,7 @@ architecture rtl of CPU is
                           MEM_WriteReg , EX_WriteReg,
                           MEM_MemWrite , EX_MemWrite,
                           MEM_MemRead , EX_MemRead,
+                          MEM_RegWrite , EX_RegWrite,
                           MEM_MemToReg , EX_MemToReg);
 
         -- MEM
@@ -148,7 +166,8 @@ architecture rtl of CPU is
                           WB_ALU_ValueOut , MEM_ALU_ValueOut,
                           WB_PC_8 , MEM_PC_8,
                           WB_WriteReg , MEM_WriteReg,
-                          WB_MemToReg , MEM_MemToReg);
+                          WB_MemToReg , MEM_MemToReg,
+                          WB_RegWrite , MEM_RegWrite);
             
         -- WB
                 Writeback: entity work.Writeback(rtl)
@@ -865,6 +884,43 @@ architecture rtl of CPU is
                     report "Bad IF_PC = " & str(IF_PC);
                 assert IF_inst = x"00000000"
                     report "Bad IF_inst:" & str(IF_inst);
+
+                wait until clk = '1';
+                wait until clk = '0';
+            
+                assert IF_PC = x"00000504"
+                    report "Bad IF_PC = " & str(IF_PC);
+
+                wait until clk = '1';
+                wait until clk = '0';
+            
+                assert IF_PC = x"00000508"
+                    report "Bad IF_PC = " & str(IF_PC);
+
+                wait until clk = '1';
+                wait until clk = '0';
+            
+                assert IF_PC = x"0000050c"
+                    report "Bad IF_PC = " & str(IF_PC);
+
+                wait until clk = '1';
+                wait until clk = '0';
+
+                assert IF_PC = x"00000510"
+                    report "Bad IF_PC = " & str(IF_PC);
+
+                wait until clk = '1';
+                wait until clk = '0';
+
+                assert IF_PC = x"00000514"
+                    report "Bad IF_PC = " & str(IF_PC);
+                assert EX_ForwardA = "01"
+                    report "Bad EX_ForwardA = " & str(EX_ForwardA);
+                assert EX_ForwardB = "10"
+                    report "Bad EX_ForwardB = " & str(EX_ForwardB);
+
+                wait until clk = '1';
+                wait until clk = '0';
             
         end if;
             

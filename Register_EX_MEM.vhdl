@@ -23,6 +23,9 @@ entity Register_EX_MEM is
           MemRead_out : out std_logic;
           MemRead     :  in std_logic;
 
+          RegWrite_out : out std_logic;
+          RegWrite     :  in std_logic;
+
           MemToReg_out : out std_logic_vector(1 downto 0);
           MemToReg     :  in std_logic_vector(1 downto 0));
     end Register_EX_MEM;
@@ -40,7 +43,9 @@ entity Register_EX_MEM is
         MemWrite_reg: entity work.register1(rtl)
             port map (MemWrite, '1', clk, MemWrite_out, open);        
         MemRead_reg: entity work.register1(rtl)
-            port map (MemRead, '1', clk, MemRead_out, open);        
+            port map (MemRead, '1', clk, MemRead_out, open); 
+        RegWrite_reg: entity work.register1(rtl)
+            port map (RegWrite, '1', clk, RegWrite_out, open);        
         MemToReg_reg: entity work.register2(rtl)
             port map (MemToReg, '1', clk, MemToReg_out, open);        
     end rtl;

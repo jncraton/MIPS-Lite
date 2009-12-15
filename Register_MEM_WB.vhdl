@@ -18,7 +18,11 @@ entity Register_MEM_WB is
           WriteReg     :  in std_logic_vector(4 downto 0);
 
           MemToReg_out : out std_logic_vector(1 downto 0);
-          MemToReg     :  in std_logic_vector(1 downto 0));
+          MemToReg     :  in std_logic_vector(1 downto 0);
+          
+          RegWrite_out : out std_logic;
+          RegWrite     :  in std_logic);
+          
     end Register_MEM_WB;
     
     architecture rtl of Register_MEM_WB is
@@ -32,5 +36,8 @@ entity Register_MEM_WB is
         WriteReg_reg: entity work.register5(rtl)
             port map (WriteReg, '1', clk, WriteReg_out, open);        
         MemToReg_reg: entity work.register2(rtl)
-            port map (MemToReg, '1', clk, MemToReg_out, open);        
+            port map (MemToReg, '1', clk, MemToReg_out, open);
+        RegWrite_reg: entity work.register1(rtl)
+            port map (RegWrite, '1', clk, RegWrite_out, open);        
+        
     end rtl;

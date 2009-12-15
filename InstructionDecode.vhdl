@@ -10,6 +10,7 @@ entity InstructionDecode is
           inst_data : in std_logic_vector(31 downto 0);
           writeReg : in std_logic_vector(4 downto 0);
           writeData : in std_logic_vector(31 downto 0);
+          WB_RegWrite : in std_logic;
           
           operation : out std_logic_vector(5 downto 0);
           rs,rt,rd : out std_logic_vector(4 downto 0);
@@ -77,11 +78,9 @@ entity InstructionDecode is
 
             -- Register File
                 register_file: entity work.RegFile(rtl)
-                    port map (rs_i, rt_i, writeReg, rf_WE, clk,                       
+                    port map (rs_i, rt_i, writeReg, WB_RegWrite, clk,                       
                               writeData, read1Data_i, read2Data_i);
                               
-                RegWrite <= rf_WE;
-                
                 read1Data <= read1Data_i;
                 read2Data <= read2Data_i;
         
@@ -89,7 +88,7 @@ entity InstructionDecode is
                 control: entity work.Control(rtl)
                     port map (inst_data(31 downto 26), inst_data(5 downto 0),
                               Branch_i,MemRead,MemWrite,
-                              rf_WE,SignExtend,
+                              RegWrite,SignExtend,
                               ALUSrc,MemToReg,RegDst_i,
                               Jump_i,ALUOp);
                               

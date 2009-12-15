@@ -29,6 +29,12 @@ entity Register_ID_EX is
           WriteReg_out : out std_logic_vector(4 downto 0);
           WriteReg     :  in std_logic_vector(4 downto 0);
 
+          Reg1_out : out std_logic_vector(4 downto 0);
+          Reg1     :  in std_logic_vector(4 downto 0);
+
+          Reg2_out : out std_logic_vector(4 downto 0);
+          Reg2     :  in std_logic_vector(4 downto 0);
+
           ALUSrc_out : out std_logic_vector(1 downto 0);
           ALUSrc     :  in std_logic_vector(1 downto 0);
 
@@ -40,6 +46,9 @@ entity Register_ID_EX is
 
           MemRead_out : out std_logic;
           MemRead     :  in std_logic;
+
+          RegWrite_out : out std_logic;
+          RegWrite     :  in std_logic;
 
           MemToReg_out : out std_logic_vector(1 downto 0);
           MemToReg     :  in std_logic_vector(1 downto 0);
@@ -66,6 +75,10 @@ entity Register_ID_EX is
             port map (PC_8, '1', clk, PC_8_out, open);        
         WriteReg_reg: entity work.register5(rtl)
             port map (WriteReg, '1', clk, WriteReg_out, open);        
+        Reg1_reg: entity work.register5(rtl)
+            port map (Reg1, '1', clk, Reg1_out, open);        
+        Reg2_reg: entity work.register5(rtl)
+            port map (Reg2, '1', clk, Reg2_out, open);        
         ALUSrc_reg: entity work.register2(rtl)
             port map (ALUSrc, '1', clk, ALUSrc_out, open);        
         ALUOp_reg: entity work.register2(rtl)
@@ -74,6 +87,8 @@ entity Register_ID_EX is
             port map (MemWrite, '1', clk, MemWrite_out, open);        
         MemRead_reg: entity work.register1(rtl)
             port map (MemRead, '1', clk, MemRead_out, open);        
+        RegWrite_reg: entity work.register1(rtl)
+            port map (RegWrite, '1', clk, RegWrite_out, open);        
         MemToReg_reg: entity work.register2(rtl)
             port map (MemToReg, '1', clk, MemToReg_out, open);
         NextPC_reg: entity work.register32(rtl)
