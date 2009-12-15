@@ -5,6 +5,7 @@ use work.txt_util.all;
 
 entity Memory is
     port (clk : in std_logic;
+          reset : in std_logic;
           WriteData : in std_logic_vector(31 downto 0);
           Address : in std_logic_vector(31 downto 0);
           MemWrite : in std_logic;
@@ -25,7 +26,7 @@ entity Memory is
         
                 nwe <= not MemWrite;
                 noe <= not MemRead;
-                ncs <= not (MemWrite or MemRead);
+                ncs <= not (MemWrite or MemRead) or (not reset);
 
             -- connect data to reg out 2 with a tristate buffer
                 GEN_memtris: for n in 31 downto 0 generate

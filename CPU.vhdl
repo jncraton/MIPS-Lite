@@ -1,5 +1,4 @@
--- ghdl -m --ieee=synopsys CPU 2> compile_log.txt; cat compile_log.txt | grep CPU.vhdl; perl asm.pl; ./cpu > /dev/null 2> output.txt; cat output.txt| grep CPU.vhdl | grep :
-
+-- ghdl -m --ieee=synpsys CPU 2> compile_log.txt; cat compile_log.txt | grep CPU.vhdl; perl asm.pl; ./cpu > /dev/null 2> output.txt; cat output.txt| grep CPU.vhdl | grep :
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -12,8 +11,8 @@ end CPU;
 architecture rtl of CPU is
 
     -- signal definitions
-        signal clk: std_logic;
-        signal reset: std_logic;
+        signal clk : std_logic;
+        signal reset : std_logic;
         
         -- IF
         signal IF_PC,IF_PC_4,IF_PC_8: std_logic_vector(31 downto 0);
@@ -153,7 +152,7 @@ architecture rtl of CPU is
 
         -- MEM
             Memory: entity work.Memory(rtl)
-                port map (clk,
+                port map (clk,reset,
                         MEM_Read2Data,
                         MEM_ALU_ValueOut,
                         MEM_MemWrite, MEM_MemRead,
@@ -200,6 +199,10 @@ architecture rtl of CPU is
     run: process begin
         reset <= '0';
 
+        wait until clk = '1';
+        wait until clk = '0';
+        wait until clk = '1';
+        wait until clk = '0';
         wait until clk = '1';
         wait until clk = '0';
         wait until clk = '1';
